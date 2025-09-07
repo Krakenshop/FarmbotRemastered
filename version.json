@@ -1,5 +1,6 @@
 {
-  "version": "1.8",
-  "version_num": 1.8,
-  "update_notes": "Исправлены баги и улучшена логика работы"
+    "version": "1.7",
+    "version_num": 17,
+    "auto_update": true,
+    "changelog": "Фиксы багов, улучшения"
 }
