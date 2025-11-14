@@ -1,6 +1,4 @@
 {
-    "version": "1.7",
-    "version_num": 17,
-    "auto_update": true,
-    "changelog": "Фиксы багов, улучшения"
+  "latest": "25.06.2022",
+  "updateurl": "https://raw.githubusercontent.com/Krakenshop/FarmbotRemastered/refs/heads/main/Farm%20Bot%20v1.7.lua"
 }
