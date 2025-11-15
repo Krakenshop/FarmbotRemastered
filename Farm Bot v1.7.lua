@@ -164,31 +164,31 @@ local bindID = 0
 local tLastKeys = {}
 
 local items = {
-	u8"Ò¸ìíàÿ òåìà",
-	u8"Ñèíèÿ òåìà",
-	u8"Êðàñíàÿ òåìà",
-	u8"Ãîëóáàÿ òåìà",
-	u8"Çåë¸íàÿ òåìà",
-	u8"Îðàíæåâàÿ òåìà",
-	u8"Ôèîëåòîâàÿ òåìà",
-	u8"Ò¸ìíî-ñâåòëàÿ òåìà"
+	u8"Тёмная тема",
+	u8"Синия тема",
+	u8"Красная тема",
+	u8"Голубая тема",
+	u8"Зелёная тема",
+	u8"Оранжевая тема",
+	u8"Фиолетовая тема",
+	u8"Тёмно-светлая тема"
 }
 
 local styles = {
-	u8'Ñòðîãèé',
-	u8'Ìÿãêèé'
+	u8'Строгий',
+	u8'Мягкий'
 }
 
 local posts = {
-	u8"Íà÷àëüíûé ôåðìåð",
-	u8"Òðàêòîðèñò",
-	u8"Êîìáàéíåð"
+	u8"Начальный фермер",
+	u8"Тракторист",
+	u8"Комбайнер"
 }
 
 --------------------------------------------VK NOTF--------------------------------------------------
 local key, server, ts
 
-function threadHandle(runner, url, args, resolve, reject) -- îáðàáîòêà effil ïîòîêà áåç áëîêèðîâîê
+function threadHandle(runner, url, args, resolve, reject) -- обработка effil потока без блокировок
 	local t = runner(url, args)
 	local r = t:get(0)
 	while not r do
@@ -207,7 +207,7 @@ function threadHandle(runner, url, args, resolve, reject) -- îáðàáîòêà 
 	t:cancel(0)
 end
 
-function requestRunner() -- ñîçäàíèå effil ïîòîêà ñ ôóíêöèåé https çàïðîñà
+function requestRunner() -- создание effil потока с функцией https запроса
 	return effil.thread(function(u, a)
 		local https = require 'ssl.https'
 		local ok, result = pcall(https.request, u, a)
@@ -236,10 +236,9 @@ function main()
     if not isSampLoaded() or not isSampfuncsLoaded() then return end
     while not isSampAvailable() do wait(100) end
 
-    sampRegisterChatCommand("farm", function()
-        main_windows_state.v = not main_windows_state.v
-        print("Command triggered, main_windows_state.v:", main_windows_state.v)
-    end)
+    bindID = rkeys.registerHotKey(ActiveMenu.v, true, function ()
+		main_windows_state.v = not main_windows_state.v
+	end)
 
     if doesFileExist(thisScript().path) then
 		os.rename(thisScript().path, 'moonloader/Farm Bot v'..thisScript().version..'.lua')
@@ -259,7 +258,7 @@ function main()
 	end
     
     if ini.settings.reload == true then
-		SCM('Óñïåøíî ñîõðàíåíî è ïðèìåíåíî.')
+		SCM('Успешно сохранено и применено.')
 		main_windows_state.v = true
 		ini.settings.reload = false
 		inicfg.save(def, directIni)
@@ -269,7 +268,7 @@ function main()
 		inicfg.save(def, directIni)
     end
 
-    SCM('Ñêðèïò çàãðóæåí. Àêòèâàöèÿ: {F1CB09}')
+    SCM('Скрипт загружен. Активация: {F1CB09}'..table.concat(rkeys.getKeysName(ActiveMenu.v), " + "))
     update()
     while true do
         wait(250)
@@ -317,20 +316,20 @@ end)
 
 
 ----------------------------------------------------------------------------------------------------------------------
--------------------------------------------------Àíòè-Ãîëîä by Hawk---------------------------------------------------
+-------------------------------------------------Анти-Голод by Hawk---------------------------------------------------
 ------------------------------------------https://blast.hk/threads/31640/---------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 lua_thread.create(function()
 	while true do 
 		wait(300)
-		if (altbot.v or animsbot.v or chipsbot.v or fishbot.v or venisonbot.v or venisonbotbag.v) and (b_loop.v or f_scrText_state or sat_flag) then -- Àíòè-ãîëîä îò Õàâêà
+		if (altbot.v or animsbot.v or chipsbot.v or fishbot.v or venisonbot.v or venisonbotbag.v) and (b_loop.v or f_scrText_state or sat_flag) then -- Анти-голод от Хавка
             if b_loop.v then
                 wait(d_loop.v*1000)
                 if not b_loop.v then
                     break
                 end
             elseif f_scrText_state or sat_flag then
-                if potok == false and helptext.v then SCM('Ïîñïàëè, òåïåðü ìîæíî è ïîåñòü.') end
+                if potok == false and helptext.v then SCM('Поспали, теперь можно и поесть.') end
                 wait(50)
             end
             if altbot.v or animsbot.v then
@@ -343,7 +342,7 @@ lua_thread.create(function()
                 sampSendDialogResponse(185, 1, 6)
                 wait(250)
                 sampCloseCurrentDialogWithButton(0)
-                SCM('Ïîåëè, òåïåðü ìîæíî è ïîñïàòü.')
+                SCM('Поели, теперь можно и поспать.')
                 if animsuse.v then
                     if altbot.v then
                         setGameKeyState(21, 255)--alt
@@ -363,8 +362,8 @@ lua_thread.create(function()
                                     for i=90, 99 do
                                         text = sampGetChatString(i)
                                         --print(text)
-                                        if text == "Ó òåáÿ íåò ÷èïñîâ!" then
-                                            SCM('Chips-bot îòêëþ÷åí.')
+                                        if text == "У тебя нет чипсов!" then
+                                            SCM('Chips-bot отключен.')
                                             chipsbot.v = false
                                             break
                                         end
@@ -379,8 +378,8 @@ lua_thread.create(function()
                                     for i=90, 99 do
                                         text = sampGetChatString(i)
                                         --print(text)
-                                        if text == "Ó òåáÿ íåò æàðåíîé ðûáû!" then
-                                            SCM('Fish-bot îòêëþ÷åí.')
+                                        if text == "У тебя нет жареной рыбы!" then
+                                            SCM('Fish-bot отключен.')
                                             fishbot.v = false
                                             break
                                         end
@@ -395,8 +394,8 @@ lua_thread.create(function()
                                     for i=90, 99 do
                                         text = sampGetChatString(i)
                                         --print(text)
-                                        if text == "Ó òåáÿ íåò æàðåíîãî ìÿñà îëåíèíû!" then
-                                            SCM('Venison-bot îòêëþ÷åí.')
+                                        if text == "У тебя нет жареного мяса оленины!" then
+                                            SCM('Venison-bot отключен.')
                                             venisonbot.v = false
                                             break
                                         end
@@ -411,8 +410,8 @@ lua_thread.create(function()
                                     for i=90, 99 do
                                         text = sampGetChatString(i)
                                         print(text)
-                                        if string.find(text,"Ó âàñ íåò ìåøêà ñ ìÿñîì!") then
-                                            SCM('Venison Bag-bot îòêëþ÷åí.')
+                                        if string.find(text,"У вас нет мешка с мясом!") then
+                                            SCM('Venison Bag-bot отключен.')
                                             venisonbotbag.v = false
                                             break
                                         end
@@ -430,13 +429,13 @@ lua_thread.create(function()
                             end
                         end)
                     end
-                if sat_full and helptext.v then SCM('Ïîåëè, òåïåðü ìîæíî è ïîñïàòü.') sampCloseCurrentDialogWithButton(0) end
+                if sat_full and helptext.v then SCM('Поели, теперь можно и поспать.') sampCloseCurrentDialogWithButton(0) end
             end
         end
 	end
 end)
 
------------------------------------Ñàìï åâåíòñ---------------------------------------
+-----------------------------------Самп евентс---------------------------------------
 
 function sampev.onSetPlayerAttachedObject(pid, index, create, obj)
     _, myid = sampGetPlayerIdByCharHandle(PLAYER_PED)
@@ -477,49 +476,52 @@ end
 otvet = false
 
 function sampev.onServerMessage(clr, msg)
-    if work and msg:find('Ñåíà ïåðåòàùåíî:') then
+    if work and msg:find('Сена перетащено:') then
         value = value + 1
     end
-    if (work or work1) and msg:find('Âû óñïåøíî çàáðàëè ñâîþ çàðïëàòó â ðàçìåðå:') then
+    if (work or work1) and msg:find('Вы успешно забрали свою зарплату в размере:') then
         lua_thread.create(function() 
-            BeginToPoint(-92.8096, 93.2234, 3.1172, 5, -255, true)  
+            BeginToPoint(-92.8096,93.2234,3.1172, 5, -255, true)  
             work = false
             work1 = false
         end)
     end
-    if (work or work1) and msg:find('Âû åùå íè÷åãî íå çàðàáîòàëè è íå ìîæåòå ïîëó÷èòü çàðïëàòó!') then
+    if (work or work1) and msg:find('Вы еще ничего не заработали и не можете получить зарплату!') then
         lua_thread.create(function() 
-            BeginToPoint(-92.8096, 93.2234, 3.1172, 5, -255, true)  
+            BeginToPoint(-92.8096,93.2234,3.1172, 5, -255, true)  
             work = false
             work1 = false
         end)
     end
-    if msg:find('Âû òóò?') or msg:find('âû òóò?') or msg:find('îòâåòèë âàì') and ini.vk.ot then
+    if msg:find('Вы тут?') or msg:find('вы тут?') or msg:find('ответил вам') and ini.vk.ot then
         if ini.settings.auto then 
             lua_thread.create(function() 
                 if not otvet then
                     otvet = true
                     wait(3200) 
-                    sampSendChat('Äà')
+                    sampSendChat('Да')
                     wait(5000)
                     otvet = false
                 end
             end)
         end
     end
-    if work1 and msg:find('Âû óñïåøíî îòðàáîòàëè.') then
+    if work1 and msg:find('Вы успешно отработали.') then
         value1 = value1 + 1
         num = 0
+        --print(value1)
+        --print(ini.settings.lim1)
+        --print(limit1)
         if value1 >= ini.settings.lim1 and not ini.settings.limit1 then
             gopay = true
             ww = true
             lua_thread.create(function()
-                rideTo(-108.5108, 119.1330, 3.0700, 50)
-                rideTo(-121.1731, 85.7734, 3.0719, 50)
-                rideTo(-115.0045, 79.7263, 3.0729, 50)
-                rideTo(-108.6299, 76.0149, 3.0727, 50)
-                rideTo(-96.1733, 75.8351, 3.0727, 20)
-                rideTo(-87.7826, 74.0141, 3.0721, 10)
+                rideTo(-108.5108,119.1330,3.0700, 50)
+                rideTo(-121.1731,85.7734,3.0719, 50)
+                rideTo(-115.0045,79.7263,3.0729, 50)
+                rideTo(-108.6299,76.0149,3.0727, 50)
+                rideTo(-96.1733,75.8351,3.0727, 20)
+                rideTo(-87.7826,74.0141,3.0721, 10)
                 sampSendChat('/engine')
                 ww = false
                 wait(500)
@@ -537,7 +539,7 @@ function sampev.onServerMessage(clr, msg)
                     end
                     wait(1500)
                 end
-                BeginToPoint(-80.5411, 82.7958, 3.1096, 1, -255, false)
+                BeginToPoint(-80.5411,82.7958,3.1096, 1, -255, false)
                 wait(2000)
                 while true do
                     wait(150)
@@ -545,58 +547,31 @@ function sampev.onServerMessage(clr, msg)
                     break
                 end
             end)
+        else
+        ww = true 
         end
     end
     if f_scrText_state and (altbot.v or animsbot.v or chipsbot.v or fishbot.v or venisonbot.v or venisonbotbag.v) then
-        if string.find(msg, "Âû âçÿëè êîìïëåêñíûé îáåä. Ïîñìîòðåòü ñîñòîÿíèå ãîëîäà ìîæíî") then
-            f_scrText_state = false
-        end
-    end
+		if string.find(msg,"Вы взяли комплексный обед. Посмотреть состояние голода можно") then
+			f_scrText_state=false
+		end
+	end
 end
 
 function sampev.onSetRaceCheckpoint(type, pos)
     if work1 and not gopay then
         num = num + 1
-        sampAddChatMessage("Current checkpoint: " .. num, -1)
-        lua_thread.create(function()
-            if num == 19 then
-                rideTo(-121.4095, -123.5240, 4.0606, 60, 3.0)
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
-            elseif num == 28 then
-                rideTo(24.9672, -26.8587, 4.0216, 60, 3.0)
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
-            elseif num == 38 then
-                rideTo(55.4785, 53.3833, 2.2682, 60, 3.0)
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
-            elseif num == 40 then
-                rideTo(-7.5333, 30.1100, 4.0611, 60, 3.0)
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
-            elseif num == 41 then
-                rideTo(-34.6055, 8.3665, 4.0636, 60, 3.0)
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
- elseif value1 > 0 and num == 1 then
-     ww = true
-     sampAddChatMessage("{00FF00}[BOT]{FFFFFF} Çàïóñêàþ ìàðøðóò ñ ïåðâîãî ÷åêïîèíòà...", -1)
-     rideTo(-67.9033, 25.4006, 4.0607, 60, 3.0)
-     rideTo(-82.3245, 39.1356, 4.0620, 60, 3.0)
-     rideTo(-106.5499, 40.5278, 4.0667, 60, 3.0)
-     rideTo(-120.0644, 4.8134, 4.0575, 60, 3.0)
-     rideTo(-130.6800, -43.2168, 4.0672, 60, 3.0)
-     rideTo(-150.7212, -76.3725, 4.0549, 60, 3.0)
-     rideTo(-164.0034, -109.4677, 4.0785, 60, 3.0)
-     rideTo(-179.5366, -117.1296, 4.0603, 60, 3.0)
-     rideTo(-185.1780, -84.2181, 4.0672, 45)
-     sampAddChatMessage("{00FF00}[BOT]{FFFFFF} Ìàðøðóò çàâåðø¸í, âîçâðàùàþñü ê íà÷àëó.", -1)
-            elseif num == 70 then
-                rideTo(-119.7002, 84.2271, 3.0719, 60, 1.2)
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
+        lua_thread.create(function() 
+            if num == 70 then 
+                rideTo(-119.7002, 84.2271, 3.0719, 60) 
+                rideTo(pos.x,pos.y,pos.z, 60)
             else
-                rideTo(pos.x, pos.y, pos.z, 60, 1.2)
-            end
+                rideTo(pos.x,pos.y,pos.z, 60) 
+            end 
         end)
     end
 end
----118.17479705811   97.49169921875   3.0650999546051
+-- -118.17479705811   97.49169921875   3.0650999546051
 ------------------------------------------------------------------------------------------------------------------
 
 --------------------------------------https://blast.hk/threads/31640/-------------------------------------------
@@ -666,7 +641,7 @@ end
 
 function ShowCOPYRIGHT(desc)
 
-    if faico then imgui.TextDisabled(fa.ICON_FA_QUESTION_CIRCLE) else imgui.TextDisabled(u8'(Ñ)') end
+    if faico then imgui.TextDisabled(fa.ICON_FA_QUESTION_CIRCLE) else imgui.TextDisabled(u8'(С)') end
     if imgui.IsItemHovered() then
         imgui.BeginTooltip()
         imgui.PushTextWrapPos(450.0)
@@ -705,62 +680,62 @@ function imgui.OnDrawFrame()
 
         imgui.BeginChild('left pane', imgui.ImVec2(150, 0), true)
             if faico then 
-                if imgui.Button(u8"Íàñòðîéêè áîòà  "..fa.ICON_FA_ROBOT, imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Настройки бота  "..fa.ICON_FA_ROBOT, imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[1] = true
                     ini.settings.vkladka = 1
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Àíòè-ãîëîä  "..fa.ICON_FA_UTENSILS, imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Анти-голод  "..fa.ICON_FA_UTENSILS, imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[2] = true
                     ini.settings.vkladka = 2
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Óâåäîìëåíèÿ ÂÊ  "..fa.ICON_FA_INFO, imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Уведомления ВК  "..fa.ICON_FA_INFO, imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[3] = true
                     ini.settings.vkladka = 3
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Íàñòðîéêè  "..fa.ICON_FA_COGS, imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Настройки  "..fa.ICON_FA_COGS, imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[4] = true
                     ini.settings.vkladka = 4
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Èíôîðìàöèÿ  "..fa.ICON_FA_INFO_CIRCLE, imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Информация  "..fa.ICON_FA_INFO_CIRCLE, imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[5] = true
                     ini.settings.vkladka = 5
                     inicfg.save(def, directIni)
                 end
             else
-                if imgui.Button(u8"Íàñòðîéêè áîòà  ", imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Настройки бота  ", imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[1] = true
                     ini.settings.vkladka = 1
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Àíòè-ãîëîä  ", imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Анти-голод  ", imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[2] = true
                     ini.settings.vkladka = 2
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Óâåäîìëåíèÿ ÂÊ  ", imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Уведомления ВК  ", imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[3] = true
                     ini.settings.vkladka = 3
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Íàñòðîéêè  ", imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Настройки  ", imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[4] = true
                     ini.settings.vkladka = 4
                     inicfg.save(def, directIni)
                 end
-                if imgui.Button(u8"Èíôîðìàöèÿ", imgui.ImVec2(133, 35)) then
+                if imgui.Button(u8"Информация", imgui.ImVec2(133, 35)) then
                     uu()
                     vkladki[5] = true
                     ini.settings.vkladka = 5
@@ -770,14 +745,14 @@ function imgui.OnDrawFrame()
         imgui.EndChild()
         imgui.SameLine()
 
-        if vkladki[1] == true then -- Íàñòðîéêè áîòà
+        if vkladki[1] == true then -- Настройки бота
 			imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(210)
-            if faico then imgui.Text(u8'Íàñòðîéêè áîòà '..fa.ICON_FA_ROBOT) else imgui.Text(u8'Íàñòðîéêè áîòà') end
+            if faico then imgui.Text(u8'Настройки бота '..fa.ICON_FA_ROBOT) else imgui.Text(u8'Настройки бота') end
 			imgui.NewLine()
             imgui.Separator() imgui.NewLine() imgui.NewLine()
-            imgui.SameLine(30) imgui.Text(u8'Âûáîð äîëæíîñòè:') imgui.SameLine(170)
+            imgui.SameLine(30) imgui.Text(u8'Выбор должности:') imgui.SameLine(170)
             imgui.PushItemWidth(250)
 			if imgui.Combo('##dl', post, posts, -1)then
 				ini.settings.post = post.v
@@ -785,14 +760,14 @@ function imgui.OnDrawFrame()
             end imgui.PopItemWidth()
             imgui.NewLine() imgui.Separator() imgui.NewLine() imgui.NewLine()
             if ini.settings.post == 0 then
-                imgui.SameLine(30) imgui.Text(u8'Áåç îãðàíè÷åíèÿ:') imgui.SameLine(170) 
+                imgui.SameLine(30) imgui.Text(u8'Без ограничения:') imgui.SameLine(170) 
                 if imadd.ToggleButton('##limit', limit) then
                     ini.settings.limit = limit.v
                     inicfg.save(def, directIni)
                 end
                 if ini.settings.limit == false then
                     imgui.NewLine() imgui.NewLine()
-                    imgui.SameLine(30) imgui.Text(u8'Îãðàíè÷åíèå:') imgui.SameLine(170) 
+                    imgui.SameLine(30) imgui.Text(u8'Ограничение:') imgui.SameLine(170) 
                     imgui.PushItemWidth(250) 
                         if imgui.InputInt('##lim', lim) then
                             ini.settings.lim = lim.v
@@ -802,93 +777,85 @@ function imgui.OnDrawFrame()
                 end
                 imgui.SetCursorPos(imgui.ImVec2(486, 300))
                 if faico then
-                    if imgui.Button(fa.ICON_FA_PLAY_CIRCLE..u8'  Íà÷àòü', imgui.ImVec2(100, 30)) then
+                    if imgui.Button(fa.ICON_FA_PLAY_CIRCLE..u8'  Начать', imgui.ImVec2(100, 30)) then
                         work = true
                         gopoint = true
                     end imgui.SameLine()
                     if work == true then
-                        if imgui.Button(fa.ICON_FA_STOP_CIRCLE..u8'  Ñòîï', imgui.ImVec2(100, 30)) then
+                        if imgui.Button(fa.ICON_FA_STOP_CIRCLE..u8'  Стоп', imgui.ImVec2(100, 30)) then
                             work = false
                         end
                     end
                 else
-                    if imgui.Button(u8'Íà÷àòü', imgui.ImVec2(100, 30)) then
+                    if imgui.Button(u8'Начать', imgui.ImVec2(100, 30)) then
                         work = true
                         gopoint = true
                     end imgui.SameLine()
                     if work == true then
-                        if imgui.Button(u8'Ñòîï', imgui.ImVec2(100, 30)) then
+                        if imgui.Button(u8'Стоп', imgui.ImVec2(100, 30)) then
                             work = false
                         end
                     end
                 end
             end
             if ini.settings.post == 1 then
-                imgui.SameLine(30) imgui.Text(u8'Áåç îãðàíè÷åíèÿ:') imgui.SameLine(170) 
+                imgui.SameLine(30) imgui.Text(u8'Без ограничения:') imgui.SameLine(170) 
                 if imadd.ToggleButton('##liimit', limit1) then
                     ini.settings.limit1 = limit1.v
                     inicfg.save(def, directIni)
                 end
                 if ini.settings.limit1 == false then
                     imgui.NewLine() imgui.NewLine()
-                    imgui.SameLine(30) imgui.Text(u8'Îãðàíè÷åíèå:') imgui.SameLine(170) 
+                    imgui.SameLine(30) imgui.Text(u8'Ограничение:') imgui.SameLine(170) 
                     imgui.PushItemWidth(250) 
                         if imgui.InputInt('##lim', lim1) then
                             ini.settings.lim1 = lim1.v
                             inicfg.save(def, directIni)
                         end
                     imgui.PopItemWidth()
-                    imgui.SameLine() ShowHelpMarker(u8'Íå ðåêîìåíäóåòñÿ ñòàâèòü áîëüøå 4, ò.ê êîí÷àåòñÿ òîïëèâî')
-                end
-                imgui.Text(u8"Èíôîðìàöèÿ: Àâòîð ñêðèïòà D.Kopnev")
-                imgui.Text(u8"Ññûëêà íà òåìó:")
-                imgui.SameLine(100)
-                if imgui.Button(u8"Ïåðåéòè") then
-                    os.execute('start "" "https://www.blast.hk/threads/40348/"')
+                    imgui.SameLine() ShowHelpMarker(u8'Не рекомендуется ставить больше 4, т.к кончается топливо')
                 end
                 imgui.SetCursorPos(imgui.ImVec2(486, 300))
                 if faico then
-                    if imgui.Button(fa.ICON_FA_PLAY_CIRCLE..u8'  Íà÷àòü', imgui.ImVec2(100, 30)) then
+                    if imgui.Button(fa.ICON_FA_PLAY_CIRCLE..u8'  Начать', imgui.ImVec2(100, 30)) then
                         if isCharInCar(PLAYER_PED, getCarCharIsUsing(PLAYER_PED)) then
-                            if 532 == getCarModel(getCarCharIsUsing(PLAYER_PED)) then
+                            if 531 == getCarModel(getCarCharIsUsing(PLAYER_PED)) then
                                 work1 = true
                                 gopay = false
                                 value1 = 0
-                                num = 1
+                                num = 0
                                 if not isCarEngineOn(getCarCharIsUsing(PLAYER_PED)) then
                                     sampSendChat('/engine')
                                 end
-                            else SCM('Âû íå â òðàêòîðå.') end
-                        else SCM('Âû íå â òðàêòîðå.') end
+                            else SCM('Вы не в тракторе.') end
+                        else SCM('Вы не в тракторе.') end
                         lua_thread.create(function() 
-                        rideTo(-185.1780, -84.2181, 4.0672, 45) 
- end)
+                        rideTo(-118.1747, 97.4916, 3.0650, 60) end)
                     end imgui.SameLine()
                     if work1 == true then
-                        if imgui.Button(fa.ICON_FA_STOP_CIRCLE..u8'  Ñòîï', imgui.ImVec2(100, 30)) then
+                        if imgui.Button(fa.ICON_FA_STOP_CIRCLE..u8'  Стоп', imgui.ImVec2(100, 30)) then
                             work1 = false
                             gopay = false
                         end
                     end
                 else
-                    if imgui.Button(u8'Íà÷àòü', imgui.ImVec2(100, 30)) then
+                    if imgui.Button(u8'Начать', imgui.ImVec2(100, 30)) then
                         if isCharInCar(PLAYER_PED, getCarCharIsUsing(PLAYER_PED)) then
-                            if 532 == getCarModel(getCarCharIsUsing(PLAYER_PED)) then
+                            if 531 == getCarModel(getCarCharIsUsing(PLAYER_PED)) then
                                 work1 = true
                                 gopay = false
                                 value1 = 0
-                                num = 1
+                                num = 0
                                 if not isCarEngineOn(getCarCharIsUsing(PLAYER_PED)) then
                                     sampSendChat('/engine')
                                 end
-                            else SCM('Âû íå â òðàêòîðå.') end
-                        else SCM('Âû íå â òðàêòîðå.') end
+                            else SCM('Вы не в тракторе.') end
+                        else SCM('Вы не в тракторе.') end
                         lua_thread.create(function() 
-                        rideTo(-185.1780, -84.2181, 4.0672, 45) 
-end)
+                        rideTo(-118.1747, 97.4916, 3.0650, 60) end)
                     end imgui.SameLine()
                     if work1 == true then
-                        if imgui.Button(u8'Ñòîï', imgui.ImVec2(100, 30)) then
+                        if imgui.Button(u8'Стоп', imgui.ImVec2(100, 30)) then
                             work1 = false
                             gopay = false
                         end
@@ -896,19 +863,19 @@ end)
                 end
             end
             if ini.settings.post == 2 then
-                imgui.SameLine(100) imgui.Text(u8'Êóïèòü: kscripts.ru   ')
-                imgui.SameLine(290) if imgui.Button(u8'Ïåðåéòè##2') then os.execute('explorer "https://kscripts.ru"') end
+                imgui.SameLine(100) imgui.Text(u8'Купить: kscripts.ru   ')
+                imgui.SameLine(290) if imgui.Button(u8'Перейти##2') then os.execute('explorer "https://kscripts.ru"') end
             end
             imgui.EndGroup()
         end
         
-        if vkladki[2] == true then -- Àíòè-ãîëîä
+        if vkladki[2] == true then -- Анти-голод
             imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
-            imgui.SameLine(200) imgui.Text(u8'Àíòè-Ãîëîä')
-            imgui.SameLine() ShowCOPYRIGHT(u8'Àâòîð: James Hawk')
+            imgui.SameLine(200) imgui.Text(u8'Анти-Голод')
+            imgui.SameLine() ShowCOPYRIGHT(u8'Автор: James Hawk')
             imgui.NewLine() imgui.Separator() imgui.NewLine()
-            imgui.SameLine(15) imgui.Text(u8'Âûáåðèòå òèï ðàáîòû ñêðèïòà:')
+            imgui.SameLine(15) imgui.Text(u8'Выберите тип работы скрипта:')
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(15) imgui.Text(u8'You are hungry: ') imgui.SameLine() if imadd.ToggleButton(u8'Yoy are hungry', uahungry) then
                 hungry.v = false
@@ -917,23 +884,23 @@ end)
                 ini.settings.hungry = hungry.v
                 ini.settings.uahungry = uahungry.v
                 inicfg.save(def, directIni)
-            end imgui.SameLine() ShowHelpMarker(u8'You are hungry - ñðàáàòûâàåò, êîãäà íà ýêðàíå ïîÿâëÿåòñÿ êðàñíàÿ íàäïèñü \"You are hungry!\" èëè \"You are very hungry!\".') imgui.SameLine(200)
-            imgui.Text(u8'Ãîëîä: ') imgui.SameLine() if imadd.ToggleButton(u8'Ãîëîä', hungry)  then
+            end imgui.SameLine() ShowHelpMarker(u8'You are hungry - срабатывает, когда на экране появляется красная надпись \"You are hungry!\" или \"You are very hungry!\".') imgui.SameLine(200)
+            imgui.Text(u8'Голод: ') imgui.SameLine() if imadd.ToggleButton(u8'Голод', hungry)  then
                 uahungry.v = false
                 b_loop.v = false
                 ini.settings.b_loop = b_loop.v
                 ini.settings.hungry = hungry.v
                 ini.settings.uahungry = uahungry.v
                 inicfg.save(def, directIni)
-            end imgui.SameLine() ShowHelpMarker(u8'Ãîëîä - ñðàáàòûâàåò êîãäà çíà÷åíèå ñûòîñòè äîñòèãàåò íèæå 20 åäèíèö.') imgui.SameLine(340)
-            imgui.Text(u8'Öèêëè÷íûé: ') imgui.SameLine() if imadd.ToggleButton(u8'Öèêëè÷íûé', b_loop)  then
+            end imgui.SameLine() ShowHelpMarker(u8'Голод - срабатывает когда значение сытости достигает ниже 20 единиц.') imgui.SameLine(340)
+            imgui.Text(u8'Цикличный: ') imgui.SameLine() if imadd.ToggleButton(u8'Цикличный', b_loop)  then
                 uahungry.v = false
                 hungry.v = false
                 ini.settings.b_loop = b_loop.v
                 ini.settings.hungry = hungry.v
                 ini.settings.uahungry = uahungry.v
                 inicfg.save(def, directIni)
-            end imgui.SameLine() ShowHelpMarker(u8'Öèêëè÷íûé - ñðàáàòûâàåò ÷åðåç îïðåäåë¸ííîå âðåìÿ óêàçàííîå ïîëüçîâàòåëåì') imgui.SameLine()
+            end imgui.SameLine() ShowHelpMarker(u8'Цикличный - срабатывает через определённое время указанное пользователем') imgui.SameLine()
             if faico then
                 if imgui.Button(fa.ICON_FA_SLIDERS_H) then
                     loop_window.v = true
@@ -944,8 +911,8 @@ end)
                 end
             end
             imgui.NewLine() imgui.Separator() imgui.NewLine() 
-            imgui.SameLine(15) imgui.Text(u8'Èñïîëüçîâàòü àíèìàöèè: ') imgui.SameLine()
-            if imadd.ToggleButton(u8'Èñïîëüçîâàòü àíèìàöèè', animsuse) then
+            imgui.SameLine(15) imgui.Text(u8'Использовать анимации: ') imgui.SameLine()
+            if imadd.ToggleButton(u8'Использовать анимации', animsuse) then
                 ini.settings.animsuse = animsuse.v
                 inicfg.save(def, directIni)
             end
@@ -953,8 +920,8 @@ end)
                 imgui.SameLine(215)  imgui.PushItemWidth(150) imgui.InputText('##anims', anims) imgui.PopItemWidth()
             end
             imgui.NewLine() imgui.Separator() imgui.NewLine()
-            imgui.SameLine(15) imgui.Text(u8'×òîáû íà÷àòü âûáåðèòå òèï áîòà:')
-            imgui.SameLine() ShowHelpMarker(u8'×òîáû èñïîëüçîâàòü àíèìàöèè, íå çàáóäüòå âêëþ÷èòü èõ, â ïóíêåò âûøå')
+            imgui.SameLine(15) imgui.Text(u8'Чтобы начать выберите тип бота:')
+            imgui.SameLine() ShowHelpMarker(u8'Чтобы использовать анимации, не забудьте включить их, в пункет выше')
             imgui.NewLine()	imgui.NewLine()
 
 
@@ -972,7 +939,7 @@ end)
 				ini.settings.venisonbotbag = venisonbotbag.v
 				inicfg.save(def, directIni)
 			end
-			imgui.SameLine() ShowHelpMarker(u8'Alt-áîò: Åñò åäó èç õîëîäèëüíèêà. Ïîñëå òîãî êàê ïîåñò ïåðåõîäèò â alt àíèìàöèþ (Íàæèìàåò ALT)')
+			imgui.SameLine() ShowHelpMarker(u8'Alt-бот: Ест еду из холодильника. После того как поест переходит в alt анимацию (Нажимает ALT)')
 
 
 			imgui.SameLine(180) imgui.Text(u8'Chips-bot:') imgui.SameLine(265) if imadd.ToggleButton('##Chips', chipsbot) then
@@ -990,7 +957,7 @@ end)
 				ini.settings.venisonbotbag = venisonbotbag.v
 				inicfg.save(def, directIni)
 			end
-			imgui.SameLine() ShowHelpMarker(u8'Chips-áîò: Åñò ÷èïñû. Ïîñëå òîãî êàê ïîåñò ïåðåõîäèò â àíèìàöèþ èç (/anims)')
+			imgui.SameLine() ShowHelpMarker(u8'Chips-бот: Ест чипсы. После того как поест переходит в анимацию из (/anims)')
 
 			imgui.SameLine(355) imgui.Text(u8'Vinison-bot:') imgui.SameLine(460) if imadd.ToggleButton('##venison', venisonbot) then
 				altbot.v = false
@@ -1007,7 +974,7 @@ end)
 				ini.settings.venisonbotbag = venisonbotbag.v
 				inicfg.save(def, directIni)
 			end
-			imgui.SameLine() ShowHelpMarker(u8'Vinison-áîò: åñò îëåíèíó. Ïîñëå òîãî êàê ïîåñò ïåðåõîäèò â àíèìàöèþ èç (/anims)')
+			imgui.SameLine() ShowHelpMarker(u8'Vinison-бот: ест оленину. После того как поест переходит в анимацию из (/anims)')
 
 
 			imgui.NewLine()	imgui.NewLine()
@@ -1025,7 +992,7 @@ end)
 				ini.settings.venisonbotbag = venisonbotbag.v
 				inicfg.save(def, directIni)
 			end
-			imgui.SameLine() ShowHelpMarker(u8'Anims-áîò: Åñò åäó èç õîëîäèëüíèêà. Ïîñëå òîãî êàê ïîåñò ïåðåõîäèò â àíèìàöèþ èç (/anims)')
+			imgui.SameLine() ShowHelpMarker(u8'Anims-бот: Ест еду из холодильника. После того как поест переходит в анимацию из (/anims)')
 
 
 			imgui.SameLine(180) imgui.Text(u8'Fish-bot:') imgui.SameLine(265) if imadd.ToggleButton('##fish', fishbot) then
@@ -1042,7 +1009,7 @@ end)
 				ini.settings.venisonbotbag = venisonbotbag.v
 				inicfg.save(def, directIni)
 			end
-			imgui.SameLine() ShowHelpMarker(u8'Fish-áîò: åñò ðûáó. Ïîñëå òîãî êàê ïîåñò ïåðåõîäèò â àíèìàöèþ èç (/anims)')
+			imgui.SameLine() ShowHelpMarker(u8'Fish-бот: ест рыбу. После того как поест переходит в анимацию из (/anims)')
 			imgui.SameLine(355) imgui.Text(u8'Venision Bag-bot:') imgui.SameLine(460) if imadd.ToggleButton('##venisonbotbag', venisonbotbag) then
 				altbot.v = false
 				chipsbot.v = false
@@ -1057,48 +1024,48 @@ end)
 				ini.settings.venisonbotbag = venisonbotbag.v
 				inicfg.save(def, directIni)
 			end
-			imgui.SameLine() ShowHelpMarker(u8'Venision Bag-áîò: åñò îëåíèíó èç ìåøêà. Ïîñëå òîãî êàê ïîåñò ïåðåõîäèò â àíèìàöèþ èç (/anims)')
+			imgui.SameLine() ShowHelpMarker(u8'Venision Bag-бот: ест оленину из мешка. После того как поест переходит в анимацию из (/anims)')
 
             imgui.EndGroup()
         end
 
-        if vkladki[3] == true then -- Óâåä âê
+        if vkladki[3] == true then -- Увед вк
             imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(210)
-            if faico then imgui.Text(u8'Óâåäîìëåíèÿ ÂÊ  '..fa.ICON_FA_INFO) else imgui.Text(u8'Óâåäîìëåíèÿ ÂÊ') end
+            if faico then imgui.Text(u8'Уведомления ВК  '..fa.ICON_FA_INFO) else imgui.Text(u8'Уведомления ВК') end
 			imgui.NewLine()
             imgui.Separator() imgui.NewLine() imgui.NewLine() imgui.SameLine(15) 
-            imgui.SameLine(100) imgui.Text(u8'Êóïèòü: kscripts.ru   ')
-            imgui.SameLine(290) if imgui.Button(u8'Ïåðåéòè##2') then os.execute('explorer "https://kscripts.ru"') end
+            imgui.SameLine(100) imgui.Text(u8'Купить: kscripts.ru   ')
+            imgui.SameLine(290) if imgui.Button(u8'Перейти##2') then os.execute('explorer "https://kscripts.ru"') end
             imgui.EndGroup()
         end
 
-        if vkladki[4] == true then -- Íàñòðîéêè 
+        if vkladki[4] == true then -- Настройки 
             imgui.BeginGroup()
 			imgui.NewLine() imgui.NewLine()
             imgui.SameLine(200)
-            if faico then imgui.Text(u8'Íàñòðîéêè  '..fa.ICON_FA_COGS) else imgui.Text(u8'Íàñòðîéêè') end
+            if faico then imgui.Text(u8'Настройки  '..fa.ICON_FA_COGS) else imgui.Text(u8'Настройки') end
             imgui.NewLine()
             imgui.Separator() imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8'Âûáîð òåìû: ') imgui.SameLine()
+			imgui.SameLine(15) imgui.Text(u8'Выбор темы: ') imgui.SameLine()
             imgui.PushItemWidth(150)
             if imgui.Combo('##theme', tema, items)then
                 ini.settings.theme = tema.v
                 inicfg.save(def, directIni)
             end imgui.PopItemWidth()
             imgui.SameLine(260)
-            imgui.Text(u8'Âûáîð ñòèëÿ: ') imgui.SameLine()
+            imgui.Text(u8'Выбор стиля: ') imgui.SameLine()
             imgui.PushItemWidth(150)
             if imgui.Combo('##style', style, styles)then
                 ini.settings.style = style.v
                 inicfg.save(def, directIni)
             end imgui.PopItemWidth()
 			imgui.NewLine() imgui.NewLine() imgui.SameLine(15)
-			imgui.Text(u8'Àêòèâàöèÿ:      ') imgui.SameLine()
+			imgui.Text(u8'Активация:      ') imgui.SameLine()
 			if imadd.HotKey("##activee", ActiveMenu, tLastKeys, 100) then
                 rkeys.changeHotKey(bindID, ActiveMenu.v)
-                SCM("Óñïåøíî! Ñòàðîå çíà÷åíèå: " .. table.concat(rkeys.getKeysName(tLastKeys.v), " + ") .. " | Íîâîå: " .. table.concat(rkeys.getKeysName(ActiveMenu.v), " + "), -1)
+                SCM("Успешно! Старое значение: " .. table.concat(rkeys.getKeysName(tLastKeys.v), " + ") .. " | Новое: " .. table.concat(rkeys.getKeysName(ActiveMenu.v), " + "), -1)
 				ini.settings.key1 = ActiveMenu.v[1]
 				ini.settings.key2 = ActiveMenu.v[2]
 				inicfg.save(def, directIni)
@@ -1106,7 +1073,7 @@ end)
             imgui.NewLine()
             imgui.Separator() imgui.NewLine() imgui.NewLine()
             imgui.SameLine(15)
-            imgui.Text(u8'FA èêîíêè:') imgui.SameLine(290)
+            imgui.Text(u8'FA иконки:') imgui.SameLine(290)
             if imadd.ToggleButton(u8'##faedit', faedit) then
                 ini.settings.faedit = faedit.v
                 ini.settings.reload = true
@@ -1115,35 +1082,35 @@ end)
                 
             end imgui.NewLine()
 			imgui.SameLine(15)
-            imgui.Text(u8'Àâòîìàòè÷åñêè îòâå÷àòü àäìèíèñòðàöèè:') imgui.SameLine(290)
+            imgui.Text(u8'Автоматически отвечать администрации:') imgui.SameLine(290)
             if imadd.ToggleButton(u8'##auto', auto) then
                 ini.settings.auto = auto.v
                 inicfg.save(def, directIni)
-            end imgui.SameLine() ShowHelpMarker(u8'Îòâå÷àòü íà âîïðîñû: Âû òóò?')
+            end imgui.SameLine() ShowHelpMarker(u8'Отвечать на вопросы: Вы тут?')
             imgui.NewLine() 
 			imgui.SameLine(15)
-            imgui.Text(u8'Ðàáîòà â ñâ¸ðíóòîì ðåæèìå:') imgui.SameLine(290)
+            imgui.Text(u8'Работа в свёрнутом режиме:') imgui.SameLine(290)
             if imadd.ToggleButton(u8'##bg', bg) then
                 ini.settings.bg = bg.v
                 inicfg.save(def, directIni)
             end
-            imgui.SameLine() ShowHelpMarker(u8'Ìîæåò ðàáîòàòü íåêîððåêòíî')
+            imgui.SameLine() ShowHelpMarker(u8'Может работать некорректно')
             imgui.NewLine()
-            imgui.SameLine(15) imgui.Text(u8'Ðåæèì íåâèäèìêè:') imgui.SameLine(290)
+            imgui.SameLine(15) imgui.Text(u8'Режим невидимки:') imgui.SameLine(290)
 			if imadd.ToggleButton(u8'##invisible', invisible) then
 				ini.settings.invisible = invisible.v
 				inicfg.save(def, directIni)
-			end imgui.SameLine() ShowHelpMarker(u8'Ñîîáùåíèÿ îò Farm Bot\'a áóäóò âûâîäèòüñÿ íå â ÷àò, à â êîíñîëü')
+			end imgui.SameLine() ShowHelpMarker(u8'Сообщения от Farm Bot\'a будут выводиться не в чат, а в консоль')
 
 
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(15) 
             if faico then
-                if imgui.Button(fa.ICON_FA_UPLOAD ..  u8'   Ïðîâåðèòü îáíîâëåíèÿ') then
+                if imgui.Button(fa.ICON_FA_UPLOAD ..  u8'   Проверить обновления') then
                     update()
                 end
             else
-                if imgui.Button(u8'Ïðîâåðèòü îáíîâëåíèÿ') then
+                if imgui.Button(u8'Проверить обновления') then
                     update()
                 end
             end
@@ -1151,7 +1118,7 @@ end)
 
 			if new == 1 then
 				imgui.SameLine()
-				if imgui.Button(u8'Îáíîâèòü') then
+				if imgui.Button(u8'Обновить') then
 					gou = true
 				end
             end
@@ -1163,44 +1130,44 @@ end)
             imgui.EndGroup()
         end
 
-        if vkladki[5] == true then -- Èíôîðìàöèÿ
+        if vkladki[5] == true then -- Информация
 			imgui.BeginGroup()
 			imgui.NewLine() imgui.NewLine()
             imgui.SameLine(200)
-            if faico then imgui.Text(u8'Èíôîðìàöèÿ  '..fa.ICON_FA_INFO_CIRCLE) else imgui.Text(u8'Èíôîðìàöèÿ') end
+            if faico then imgui.Text(u8'Информация  '..fa.ICON_FA_INFO_CIRCLE) else imgui.Text(u8'Информация') end
             imgui.NewLine()
             imgui.Separator() imgui.NewLine()
             imgui.NewLine()
 			imgui.SameLine(210)
-            imgui.TextColored(imgui.ImVec4(1, 0, 0, 1), u8'Âíèìàíèå!')
+            imgui.TextColored(imgui.ImVec4(1, 0, 0, 1), u8'Внимание!')
             imgui.NewLine()
 			imgui.SameLine(100)
-            imgui.Text(u8'Çà âàø àêêàóíò íåñ¸òå îòâåñòâåííîñòü òîëüêî âû!')
+            imgui.Text(u8'За ваш аккаунт несёте отвественность только вы!')
             imgui.NewLine()
 			imgui.SameLine(100)
-            imgui.Text(u8'Åñëè âàñ çàáàíÿò çà áîòà, òî ýòî ÷èñòî âàøà âèíà.')
+            imgui.Text(u8'Если вас забанят за бота, то это чисто ваша вина.')
             imgui.NewLine()
 			imgui.SameLine(100)
-            imgui.Text(u8'Ðåêîìåíäóåòñÿ íå îòõîäèòü äàëåêî îò êîìïüþòåðà...')
+            imgui.Text(u8'Рекомендуется не отходить далеко от компьютера...')
             imgui.NewLine()
 			imgui.SameLine(100)
-            imgui.Text(u8'...÷òîáû âîâðåìÿ ñðåàãèðîâàòü íà îòâåòû àäìèíîâ.')
+            imgui.Text(u8'...чтобы вовремя среагировать на ответы админов.')
             imgui.NewLine()
 			imgui.SameLine(100)
             imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(100) imgui.Text(u8'Àâòîð: Äàíèèë Êîïíåâ')
+			imgui.SameLine(100) imgui.Text(u8'Автор: Даниил Копнев')
 			imgui.NewLine()
-			imgui.SameLine(100) imgui.Text(u8'Ãðóïïà: vk.com/kscripts   ')
-            imgui.SameLine(290) if imgui.Button(u8'Ïåðåéòè') then os.execute('explorer "https://vk.com/kscripts"') end
+			imgui.SameLine(100) imgui.Text(u8'Группа: vk.com/kscripts   ')
+            imgui.SameLine(290) if imgui.Button(u8'Перейти') then os.execute('explorer "https://vk.com/kscripts"') end
             imgui.NewLine()
-            imgui.SameLine(100) imgui.Text(u8'Ñàéò: kscripts.ru   ')
-            imgui.SameLine(290) if imgui.Button(u8'Ïåðåéòè##2') then os.execute('explorer "https://kscripts.ru"') end
+            imgui.SameLine(100) imgui.Text(u8'Сайт: kscripts.ru   ')
+            imgui.SameLine(290) if imgui.Button(u8'Перейти##2') then os.execute('explorer "https://kscripts.ru"') end
             imgui.NewLine()
             imgui.SameLine(100) imgui.Text(u8'E-mail: support@kscripts.ru   ')
 			imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(100) imgui.Text(u8'Âåðñèÿ ñêðèïòà: '..thisScript().version)
-			if new == 1 then imgui.SameLine() imgui.Text(u8'( Äîñòóïíà íîâàÿ âåðñèÿ: '..ver..' )') else
-				imgui.SameLine() imgui.Text(u8'( Ïîñëåäíÿÿ âåðñèÿ )') end
+			imgui.SameLine(100) imgui.Text(u8'Версия скрипта: '..thisScript().version)
+			if new == 1 then imgui.SameLine() imgui.Text(u8'( Доступна новая версия: '..ver..' )') else
+				imgui.SameLine() imgui.Text(u8'( Последняя версия )') end
 			imgui.EndGroup()
 		end
 
@@ -1209,13 +1176,13 @@ end)
 
     if settings_window.v then
 		imgui.SetNextWindowPos(imgui.ImVec2(imgui.GetIO().DisplaySize.x / 5, imgui.GetIO().DisplaySize.y / 7), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.Begin(u8'Íàñòðîéêà äëÿ ãðóïïû', settings_window, 64)
-		imgui.Text(u8'Ââåäèòå äàííûå ãðóïïû: ')
-		imgui.InputInt(u8'Ââåäèòå ID ãðóïïû', id, 0)
-        imgui.InputText(u8'Ââåäèòå Token ãðóïïû', GroupToken) 
+		imgui.Begin(u8'Настройка для группы', settings_window, 64)
+		imgui.Text(u8'Введите данные группы: ')
+		imgui.InputInt(u8'Введите ID группы', id, 0)
+        imgui.InputText(u8'Введите Token группы', GroupToken) 
         imgui.SameLine()
 		imgui.NewLine() imgui.NewLine()
-        imgui.SameLine(350) if imgui.Button(u8'Ñîõðàíèòü') then
+        imgui.SameLine(350) if imgui.Button(u8'Сохранить') then
             ini.vk.token = GroupToken.v
             ini.vk.id = id.v
             inicfg.save(def, directIni)
@@ -1228,10 +1195,10 @@ end)
 		imgui.ShowCursor = true
 		imgui.SetNextWindowSize(imgui.ImVec2(350, 140), imgui.Cond.FirstUseEver)
 		imgui.SetNextWindowPos(imgui.ImVec2(imgui.GetIO().DisplaySize.x / 2, imgui.GetIO().DisplaySize.y / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.Begin(u8'Óñòàíîâêà çàäåðæêè', loop_window, 2)
+		imgui.Begin(u8'Установка задержки', loop_window, 2)
 		imgui.NewLine()
 		imgui.NewLine()
-		imgui.SameLine(15) imgui.Text(u8'Óñòàíîâêà çàäåðæêè:') imgui.SameLine(150) 
+		imgui.SameLine(15) imgui.Text(u8'Установка задержки:') imgui.SameLine(150) 
 		imgui.PushItemWidth(190) 
 		if imgui.InputInt('sec ', d_loop, 1) then
 			ini.settings.d_loop = d_loop.v
@@ -1239,14 +1206,14 @@ end)
 		end
 		imgui.PopItemWidth()
 		imgui.NewLine() imgui.NewLine()
-		imgui.SameLine(15) imgui.Text(u8'Âñïîìîãàòåëüíûé òåêñò:') imgui.SameLine(170) 
+		imgui.SameLine(15) imgui.Text(u8'Вспомогательный текст:') imgui.SameLine(170) 
 		if imadd.ToggleButton("##helptext", helptext) then
 			ini.settings.helptext = helptext.v
 			inicfg.save(def, directIni)
 		end
-		imgui.SameLine() ShowHelpMarker(u8'Òåêñò äî èëè ïîñëå íà÷àëà ïðîöåññà óïîòðåáëåíèÿ åäû: "Ïîñïàëè, òåïåðü ìîæíî è ïîåñòü" èëè "Ïîåëè, òåïåðü ìîæíî è ïîñïàòü"')
+		imgui.SameLine() ShowHelpMarker(u8'Текст до или после начала процесса употребления еды: "Поспали, теперь можно и поесть" или "Поели, теперь можно и поспать"')
 		imgui.SetCursorPos(imgui.ImVec2(260, 110))
-		if imgui.Button(u8'Çàêðûòü', imgui.ImVec2(80, 25)) then
+		if imgui.Button(u8'Закрыть', imgui.ImVec2(80, 25)) then
 			loop_window.v = false
 		end
 		imgui.End()
@@ -1259,7 +1226,7 @@ end)
 		imgui.Begin(' ', changelog_window, 2)
 		
 		imgui.SameLine(150)
-		imgui.Text(u8'Ñïèñîê èçìåíåíèé')
+		imgui.Text(u8'Список изменений')
 		imgui.NewLine()
 		--imgui.NewLine()
 		--imgui.SameLine(25)
@@ -1267,15 +1234,15 @@ end)
 			
 			imgui.Separator() imgui.NewLine() imgui.NewLine() imgui.SameLine(170)
 			imgui.Text(u8'V 1.5') imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8'1. Äîðàáîòàíà ñèñòåìà Àíòè-Ãîëîä.') imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8'2. Ïåðåäåëàíà ñèñòåìà "Ñòèëè è Òåìû".') imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8'3. Âîçìîæíîñòü îòêþ÷àòü FA icons.') imgui.NewLine() imgui.NewLine()
-            imgui.SameLine(15) imgui.Text(u8'4. Êíîïêà "Íà÷àòü" ïåðåíåñåíà ëåâåå.') imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8'1. Доработана система Анти-Голод.') imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8'2. Переделана система "Стили и Темы".') imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8'3. Возможность откючать FA icons.') imgui.NewLine() imgui.NewLine()
+            imgui.SameLine(15) imgui.Text(u8'4. Кнопка "Начать" перенесена левее.') imgui.NewLine() imgui.NewLine()
             imgui.SameLine(170) imgui.Text(u8'V 1.7') imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8'1. Òåõíè÷åñêèå íàñòðîéêè è îïòèìèçàöèÿ.') imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8'1. Технические настройки и оптимизация.') imgui.NewLine() imgui.NewLine()
 		imgui.EndGroup()
 		imgui.SetCursorPos(imgui.ImVec2(300, 460))
-		if imgui.Button(u8"Çàêðûòü", imgui.ImVec2(80, 25)) then 
+		if imgui.Button(u8"Закрыть", imgui.ImVec2(80, 25)) then 
 			changelog_window.v = false
 		end
 		imgui.End()
@@ -1288,7 +1255,7 @@ function uu()
     end
 end
 
--------------------------------Æèçíåííî íåîáõîäèìûå ïîòîêè-------------------------------------------
+-------------------------------Жизненно необходимые потоки-------------------------------------------
 huy222 = true
 lua_thread.create(function() 
     while true do
@@ -1317,70 +1284,65 @@ lua_thread.create(function()
         end
     end
 end)
--------------------------------ß çíàþ ìîæíî áûëî ïðîùå-------------------------------------------
+-------------------------------Я знаю можно было проще-------------------------------------------
 
-function rideTo(x, y, z, speed, radius)
-    radius = radius or 1.2
-    while true do
-        wait(0)
-        local veh = getCarCharIsUsing(PLAYER_PED)
-        local posX, posY, posZ = GetCoordinates()
-        local pX, pY = x - posX, y - posY
-        local targetHeading = getHeadingFromVector2d(pX, pY) 
-        local carHeading = getCarHeading(veh)
+function rideTo(x,y,z,speed)
+	while true do
+		wait(0)
+        if not isCharInCar(PLAYER_PED, getCarCharIsUsing(PLAYER_PED)) then break end
+        if not work1 then break end
 
-        -- ñ÷èòàåì ðàçíèöó óãëîâ [0..360]
-        local angsum = 360 - carHeading + targetHeading
-        if angsum > 360 then
-            angsum = angsum - 360
+        if not isCarEngineOn(getCarCharIsUsing(PLAYER_PED)) and not gopay then
+            sampSendChat('/engine')
         end
 
-        -- ðóë¸æêà
-        if angsum < 180 then
-            -- íàëåâî
-            local diff = angsum
-            if diff > 15 then
-                setGameKeyState(0, -255) -- ðåçêî
-            elseif diff > 5 then
-                setGameKeyState(0, -120) -- ñðåäíå
-            elseif diff > 1 then
-                setGameKeyState(0, -40) -- ïëàâíî
-            else
-                setGameKeyState(0, 0) -- ïðÿìî
-            end
-        else
-            -- íàïðàâî
-            local diff = 360 - angsum
-            if diff > 15 then
-                setGameKeyState(0, 255)
-            elseif diff > 5 then
-                setGameKeyState(0, 120)
-            elseif diff > 1 then
-                setGameKeyState(0, 40)
-            else
-                setGameKeyState(0, 0)
-            end
+		local posX, posY, posZ = GetCoordinates() -- тут понятно
+		local pX = x - posX
+		local pY = y - posY
+		local zAngle = getHeadingFromVector2d(pX, pY) -- получаем угол
+		ang1 = getCarHeading(getCarCharIsUsing(PLAYER_PED)) -- угол авто
+		
+		local angsum = 360 - ang1 + zAngle 	-- очень интересный момент, у меня по геометрии средний бал 3,6 , но я путем какого-то анализа сделал
+		if angsum > 360 then				-- эту сумму, которая нужна дальше
+			angsum = angsum - 360 			-- если эта сумма больше 360 то вычитаем 360, в итоге получается число от 0 до 360
         end
+		if angsum < 180 and not ww then -- так вот, если сумма меньше 180, то нужно поворачивать налево, а если больше, то направо. Ну тут 100 проц багов нет, провено
+			local aang = angsum
+			if aang > 8 then  -- если градус больше 10 то он резко поворачивает
+				setGameKeyState(0,-255) -- ну типо если - 255 то колеса сильнее поворачиваются
+			else	
+				setGameKeyState(0,-7) -- а тут слегка, но все равно резко, пробуй -3 мб
+			end
+		else -- поворачиваем направо
+			local aang = 360 - angsum
+			if aang > 5 then -- анологично строкам 18-22
+				setGameKeyState(0,230)
+			else
+				setGameKeyState(0,3)
+			end
+		end
+		
+		local dista = getDistanceBetweenCoords3d(x,y,z, posX, posY, z)
+		if dista < 1 then break end -- проверка на дистанцию до точки, и если что прерываем цикл, а вообще сам цикл бесеонечный
+		
+        local skorost = getCarSpeed(getCarCharIsUsing(PLAYER_PED) ) -- текущая скорость авто
 
-        local dista = getDistanceBetweenCoords3d(x, y, z, posX, posY, z)
-        local speedNow = getCarSpeed(veh)
-        if dista < radius then
-            print("[DEBUG] Point reached at (" .. x .. ", " .. y .. ", " .. z .. ")")
-            break
-        end
-
-        -- êîððåêòèðóåì ñêîðîñòü ïî ðàññòîÿíèþ
-        local targetSpeed = speed
-        if dista < 35 then targetSpeed = speed * 0.15 end
-        if dista < 10 then targetSpeed = speed * 0.07 end
-
-        if speedNow < targetSpeed and not ww then
-            setGameKeyState(16, 255) -- ãàç
-        elseif speedNow > targetSpeed and not ww then
-            setGameKeyState(6, 255) -- òîðìîç
-        end
-    end
+        if skorost < 0.5 and huy228 and not gopay then
+            ww = true
+            huy228 = false
+		end
+		
+		if skorost < speed and not ww then
+			setGameKeyState(14,-255) -- газ, я долго его искал, на самом деле это тормоз, в keys.lua это BRAKE, но если ставить отрицательные значения то газует
+		else
+			if skorost - speed > 0 and not ww then
+				setGameKeyState(6,255) -- тормоз на пробел
+			end
+		end
+        -- и да, тут нету функции тормоза, так что 
+	end
 end
+
 function BeginToPoint(x, y, z, radius, move_code, isSprint)
     repeat
         wait(0)
@@ -1395,11 +1357,11 @@ function BeginToPoint(x, y, z, radius, move_code, isSprint)
         MovePlayer(move_code, isSprint)
         local dist = getDistanceBetweenCoords3d(x, y, z, posX, posY, posZ)
     until dist < radius 
-    --Îé äåâà÷êè, ÿ â àõóå îò òàêîãî ÏÐÎ êîäà
+    --Ой девачки, я в ахуе от такого ПРО кода
     if x == -105.7775 and y == 100.9354 and z == 3.1172 then 
         onpoint2 = true
     else   
-        if x == -120.1061 and y == 88.2469 and z == 3.1172 then -- Èä¸ò çà çï
+        if x == -120.1061 and y == 88.2469 and z == 3.1172 then -- Идёт за зп
         lua_thread.create(function() 
         BeginToPoint(-106.0395,71.8690,3.1172, 3, -255, true) end)
         else 
@@ -1411,7 +1373,7 @@ function BeginToPoint(x, y, z, radius, move_code, isSprint)
                         lua_thread.create(function() 
                             while true do
                                 wait(150)
-                                setGameKeyState(21, 255) -- àëüò
+                                setGameKeyState(21, 255) -- альт
                                 break
                             end
                         end)
@@ -1425,10 +1387,10 @@ end -- -120.1061,88.2469,3.1172
 
 function MovePlayer(move_code, isSprint)
     setGameKeyState(1, move_code)
-    --[[255 - îáû÷íûé áåã íàçàä
-       -255 - îáû÷íûé áåã âïåðåä
-      65535 - èäòè øàãîì âïåðåä
-     -65535 - èäòè øàãîì íàçàä]]
+    --[[255 - обычный бег назад
+       -255 - обычный бег вперед
+      65535 - идти шагом вперед
+     -65535 - идти шагом назад]]
     if isSprint then setGameKeyState(16, 255) end
 end
  
@@ -1490,7 +1452,7 @@ function getLocalVehicle()
     return isCharInAnyCar(PLAYER_PED) and storeCarCharIsInNoSave(PLAYER_PED) or nil
 end
 
-function readBitstream(bs) -- Àíòè-Ãîëîä îò Õàâêà
+function readBitstream(bs) -- Анти-Голод от Хавка
 	local data = {}
 	data.id = raknetBitStreamReadInt16(bs)
 	raknetBitStreamIgnoreBits(bs, 104)
@@ -1530,8 +1492,8 @@ end
 
 function onScriptTerminate(LuaScript, quitGame)
 	if LuaScript == thisScript() and not quitGame and not ini.settings.reload and not ini.settings.reloadR then
-		sampShowDialog(6405, "                                        {FF0000}Ïðîèçîøëà îøèáêà!", "{FFFFFF}Ýòîò ñîîáùåíèå ìîæåò áûòü ëîæíûì, åñëè âû \nèñïîëüçîâàëè ñêðèïò AutoReboot \n\nÊ ñîæàëåíèþ ñêðèïò {F1CB09}Farm-Bot{FFFFFF} çàâåðøèëñÿ íåóäà÷íî\nÅñëè âû õîòèòå ïîìî÷ü ðàçðàáîò÷èêó\nÒî ìîæåòå îïèñàòü ïðè êàêîì äåéñòâèè ïðîèçîøëà îøèáêà\nÍàøà ãðóïïà: {0099CC}vk.com/kscripts", "ÎÊ", "", DIALOG_STYLE_MSGBOX)
-		SCM('Ïðîèçîøëà îøèáêà')
+		sampShowDialog(6405, "                                        {FF0000}Произошла ошибка!", "{FFFFFF}Этот сообщение может быть ложным, если вы \nиспользовали скрипт AutoReboot \n\nК сожалению скрипт {F1CB09}Farm-Bot{FFFFFF} завершился неудачно\nЕсли вы хотите помочь разработчику\nТо можете описать при каком действии произошла ошибка\nНаша группа: {0099CC}vk.com/kscripts", "ОК", "", DIALOG_STYLE_MSGBOX)
+		SCM('Произошла ошибка')
 		showCursor(false, false)
 	end
 end
@@ -1544,20 +1506,20 @@ function update()
                 if result.num > thisScript().version_num then
                     new = 1
                     ver = result.version
-                    SCM('Äîñòóïíî îáíîâëåíèå.')
+                    SCM('Доступно обновление.')
                     if result.setup then 
                         goupdate()
                     end
-                else SCM("Ó Âàñ óñòàíîâëåíà ïîñëåäíÿÿ âåðñèÿ") end
-            else sampAddChatMessage("[Connect Tool] Âíóòðåííÿÿ îøèáêà. Ïîïðîáóéòå ïîçæå", 0xFF0000) end
+                else SCM("У Вас установлена последняя версия") end
+            else sampAddChatMessage("[Connect Tool] Внутренняя ошибка. Попробуйте позже", 0xFF0000) end
         end
     end)
 end
   
 function goupdate()
     gou = false
-    SCM('Îáíàðóæåíî îáíîâëåíèå. AutoReload ìîæåò êîíôëèêòîâàòü. Îáíîâëÿþñü...')
-    SCM('Òåêóùàÿ âåðñèÿ: '..thisScript().version..". Íîâàÿ âåðñèÿ: "..ver)
+    SCM('Обнаружено обновление. AutoReload может конфликтовать. Обновляюсь...')
+    SCM('Текущая версия: '..thisScript().version..". Новая версия: "..ver)
     wait(300)
     downloadUrlToFile("https://kscripts.ru/scripts/download.php?script=Farm Bot&src=true", thisScript().path, function(id, status, p1, p2)
     	if status == dlstatus.STATUS_ENDDOWNLOADDATA then
@@ -2023,4 +1985,3 @@ function strong_style()
     style.WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
     style.ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
 end
-
