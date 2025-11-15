@@ -12,6 +12,54 @@ update_status = false
 
 local script_vers = 2
 local script_vers_text = "2.00"
+local cp1251_table = {
+    ["Рђ"]="\192", ["Р‘"]="\193", ["Р’"]="\194", ["Р“"]="\195",
+    ["Р”"]="\196", ["Р•"]="\197", ["РЃ"]="\168", ["Р–"]="\198",
+    ["Р—"]="\199", ["Р"]="\200", ["Р™"]="\201", ["Рљ"]="\202",
+    ["Р›"]="\203", ["Рњ"]="\204", ["Рќ"]="\205", ["Рћ"]="\206",
+    ["Рџ"]="\207", ["Р "]="\208", ["РЎ"]="\209", ["Рў"]="\210",
+    ["РЈ"]="\211", ["Р¤"]="\212", ["РҐ"]="\213", ["Р¦"]="\214",
+    ["Р§"]="\215", ["РЁ"]="\216", ["Р©"]="\217", ["РЄ"]="\218",
+    ["Р«"]="\219", ["Р¬"]="\220", ["Р­"]="\221", ["Р®"]="\222",
+    ["РЇ"]="\223",
+    ["Р°"]="\224", ["Р±"]="\225", ["РІ"]="\226", ["Рі"]="\227",
+    ["Рґ"]="\228", ["Рµ"]="\229", ["С‘"]="\184", ["Р¶"]="\230",
+    ["Р·"]="\231", ["Рё"]="\232", ["Р№"]="\233", ["Рє"]="\234",
+    ["Р»"]="\235", ["Рј"]="\236", ["РЅ"]="\237", ["Рѕ"]="\238",
+    ["Рї"]="\239", ["СЂ"]="\240", ["СЃ"]="\241", ["С‚"]="\242",
+    ["Сѓ"]="\243", ["С„"]="\244", ["С…"]="\245", ["С†"]="\246",
+    ["С‡"]="\247", ["С€"]="\248", ["С‰"]="\249", ["СЉ"]="\250",
+    ["С‹"]="\251", ["СЊ"]="\252", ["СЌ"]="\253", ["СЋ"]="\254",
+    ["СЏ"]="\255"
+}
+
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ РєРѕРЅРІРµСЂС‚Р°С†РёРё UTF-8 РІ CP1251
+function utf8_to_cp1251(str)
+    local res = ""
+    for uchar in str:gmatch(".") do
+        res = res .. (cp1251_table[uchar] or uchar)
+    end
+    return res
+end
+
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ РєРѕРЅРІРµСЂС‚Р°С†РёРё CP1251 РѕР±СЂР°С‚РЅРѕ РІ UTF-8
+local rev_table = {}
+for k,v in pairs(cp1251_table) do rev_table[string.byte(v)] = k end
+
+function cp1251_to_utf8(str)
+    local res = ""
+    for i = 1, #str do
+        local b = str:byte(i)
+        res = res .. (rev_table[b] or string.char(b))
+    end
+    return res
+end
+
+-- РџСЂРёРјРµСЂ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
+local text = "РџСЂРёРІРµС‚, РјРёСЂ!"
+local encoded = utf8_to_cp1251(text)   -- РІ CP1251
+local decoded = cp1251_to_utf8(encoded) -- РѕР±СЂР°С‚РЅРѕ РІ UTF-8
+print(decoded) -- РґРѕР»Р¶РЅРѕ РІС‹РІРµСЃС‚Рё "РџСЂРёРІРµС‚, РјРёСЂ!"
 
 local update_url = "https://raw.githubusercontent.com/XakerTv/moontools/refs/heads/main/update.ini"
 local update_path = getWorkingDirectory() .. "/update.ini"
@@ -27,10 +75,10 @@ function main()
     while not isSampAvailable() do wait(0) end
     local playerId = select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))
     local playerName = sampGetPlayerNickname(playerId)
-    sampAddChatMessage(scriptName .. " Скрипт готов к работе.", 0xFFFFFF)
-    sampAddChatMessage(scriptName .. " С возвращением, " .. playerName, 0xFFFFFF)
-    sampAddChatMessage(betaScriptName .. " Открыть главное меню: /mtools", 0xFFFFFF)
-    sampAddChatMessage(betaScriptName .. " Версия скрипта: " .. scriptVersion, 0xBFBFBF)
+    sampAddChatMessage(scriptName .. " Г‘ГЄГ°ГЁГЇГІ ГЈГ®ГІГ®Гў ГЄ Г°Г ГЎГ®ГІГҐ.", 0xFFFFFF)
+    sampAddChatMessage(scriptName .. " Г‘ ГўГ®Г§ГўГ°Г Г№ГҐГ­ГЁГҐГ¬, " .. playerName, 0xFFFFFF)
+    sampAddChatMessage(betaScriptName .. " ГЋГІГЄГ°Г»ГІГј ГЈГ«Г ГўГ­Г®ГҐ Г¬ГҐГ­Гѕ: /mtools", 0xFFFFFF)
+    sampAddChatMessage(betaScriptName .. " Г‚ГҐГ°Г±ГЁГї Г±ГЄГ°ГЁГЇГІГ : " .. scriptVersion, 0xBFBFBF)
     --sampRegisterChatCommand('mtools', function()
     --    renderWindow[0] = not renderWindow[0]
     --end)
@@ -38,10 +86,10 @@ function main()
         if status == dlstatus.STATUS_ENDDOWNLOADDATA then
             updateIni = inicfg.load(nil, update_path)
             if updateIni and updateIni.info and tonumber(updateIni.info.vers) > script_vers then
-                sampAddChatMessage(scriptName .. ' Доступно обновление! Версия: ' .. updateIni.info.vers_text, -1)
+                sampAddChatMessage(scriptName .. ' Г„Г®Г±ГІГіГЇГ­Г® Г®ГЎГ­Г®ГўГ«ГҐГ­ГЁГҐ! Г‚ГҐГ°Г±ГЁГї: ' .. updateIni.info.vers_text, -1)
                 update_status = true
             else
-                sampAddChatMessage(scriptName .. ' Ошибка: update.ini отсутствует или имеет неправильный формат.',
+                sampAddChatMessage(scriptName .. ' ГЋГёГЁГЎГЄГ : update.ini Г®ГІГ±ГіГІГ±ГІГўГіГҐГІ ГЁГ«ГЁ ГЁГ¬ГҐГҐГІ Г­ГҐГЇГ°Г ГўГЁГ«ГјГ­Г»Г© ГґГ®Г°Г¬Г ГІ.',
                     0xFF0000)
             end
             os.remove(update_path)
@@ -54,11 +102,11 @@ function main()
         if update_status then
             downloadUrlToFile(update_url, update_path, function(id, status)
                 if status == dlstatus.STATUS_ENDDOWNLOADDATA then
-                    sampAddChatMessage(scriptName .. 'Скрипт успешно обновлен!', -1)
-                    sampAddChatMessage(scriptName .. '==============ОБНОВЛЕНИЕ' .. scriptVersion .. '==============',
+                    sampAddChatMessage(scriptName .. 'Г‘ГЄГ°ГЁГЇГІ ГіГ±ГЇГҐГёГ­Г® Г®ГЎГ­Г®ГўГ«ГҐГ­!', -1)
+                    sampAddChatMessage(scriptName .. '==============ГЋГЃГЌГЋГ‚Г‹Г…ГЌГ€Г…' .. scriptVersion .. '==============',
                         0x8B59FF)
-                    sampAddChatMessage(scriptName .. '* Добавлено: *', -1)
-                    sampAddChatMessage(scriptName .. '- Функция автообновления', -1)
+                    sampAddChatMessage(scriptName .. '* Г„Г®ГЎГ ГўГ«ГҐГ­Г®: *', -1)
+                    sampAddChatMessage(scriptName .. '- Г”ГіГ­ГЄГ¶ГЁГї Г ГўГІГ®Г®ГЎГ­Г®ГўГ«ГҐГ­ГЁГї', -1)
                     thisScript():reload()
                 end
             end)
@@ -66,3 +114,4 @@ function main()
         end
     end
 end
+
