@@ -1,7 +1,7 @@
 script_name('Farm Bot Remastered')
 script_author('kopnev')
-script_version('1.3')
-script_version_number(1.3)
+script_version('1.4')
+script_version_number(1.4)
 
 local se = require 'samp.events'
 local sampev   = require 'lib.samp.events'
@@ -5013,3 +5013,4 @@ function strong_style()
     style.WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
     style.ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
 end
+
