@@ -628,9 +628,6 @@ function main()
     sampRegisterChatCommand(ini.settings.customCommand, function()
         main_windows_state.v = not main_windows_state.v
     end)
-    if doesFileExist(thisScript().path) then
-		os.rename(thisScript().path, 'moonloader/Farm Bot v'..thisScript().version..'.lua')
-	end
     if ini.settings.reload == true then
 		SCM(("\xD3\xF1\xEF\xE5\xF8\xED\xEE\x20\xF1\xEE\xF5\xF0\xE0\xED\xE5\xED\xEE\x20\xE8\x20\xEF\xF0\xE8\xEC\xE5\xED\xE5\xED\xEE\x2E"))
 		main_windows_state.v = true
