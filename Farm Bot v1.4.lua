@@ -110,8 +110,7 @@ local rpcs = {
     [168] = {'int16', 'int16', 'int16', 'int16'},
     [177] = {'bool', 'int16', 'float', 'int32', 'int32'}
 }
-local lowhpsent = false
-local tractorsent = false
+
 local loop = simgui.new.bool(false)
 local role_idx = imgui.ImInt(0)
 local vip_idx = imgui.ImInt(0)
@@ -122,6 +121,8 @@ local quest_window = imgui.ImBool(false)
 local settings_window = imgui.ImBool(false)
 local loop_window = imgui.ImBool(false)
 local changelog_window = imgui.ImBool(false)
+local calc_window = imgui.ImBool(false)
+local theme9_window = imgui.ImBool(false)
 local var_0_10 = imgui.ImBool(false) 
 local var_0_11 = imgui.ImBool(false) 
 
@@ -420,8 +421,7 @@ if faico then
     fa_font = nil
     fa_glyph_ranges = imgui.ImGlyphRanges({ fa.min_range, fa.max_range })
 end 
-local lastCheckpoint = nil
-local calc_window = imgui.ImBool(false)
+
 local runEnabled = imgui.ImBool(ini.settings.runenabled)
 local jumpEnabled = imgui.ImBool(ini.settings.jumpenabled)
 local smoothcumpenis228 = imgui.ImBool(ini.settings.smoothcum)
@@ -442,9 +442,9 @@ local invisible = imgui.ImBool(ini.settings.invisible)
 local selectedRoute = imgui.ImInt(ini.settings.selectedRoute)
 local auto = imgui.ImBool(ini.settings.auto)
 local bg = imgui.ImBool(ini.settings.bg)
-local theme9_window = imgui.ImBool(false)
 local var_0_12 = imgui.ImBool(ini.settings.infinitefuelengine) 
 local hidedildos = imgui.ImBool(ini.settings.hidedialog or false)
+
 value1 = 0
 work = false
 work1 = false
@@ -461,15 +461,17 @@ pipiska = true
 yasel = false
 sentkyky = false
 
+local questsTakenByBot = true
+local lastCheckpoint = nil
+local lowhpsent = false
+local tractorsent = false
 local waitingForStatsTelegram = false
 local findGameActive = false
 local lowgolod = false
 local findGameTimer = 0
 local resendInterval = 5000
-local waitingForStatsTelegram = false
 local scenarioText = nil
 local noCollisionObjects = {3276, 19300, 12756, 12918, 3374, 1333, 3594, 1332, 1333, 1334, 1331}
-local var_0_5 = false
 local turnRight = false
 local turnLeft = false
 local infengine = false
@@ -824,6 +826,7 @@ function set_camera_direction(point)
     end
 	setCameraPositionUnfixed(pitch_offset, -ax)
 end
+
 function GetNearWheat(wheat)
     local table, dist
     for i, k in pairs(wheat) do
@@ -921,6 +924,94 @@ function EngineWork()
     end
 end
 
+local function getInNearestTractor()
+    local myX, myY, myZ = getCharCoordinates(PLAYER_PED)
+    local bestVeh = nil
+    local bestDist = 99999
+    local vehicles = getAllVehicles()
+
+    for i = 1, #vehicles do
+        local veh = vehicles[i]
+        if doesVehicleExist(veh) then
+            local model = getCarModel(veh)
+            if model == 531 then
+                local driver = getDriverOfCar(veh)
+                if not driver or driver == -1 then
+                    if not isCarInWater(veh) then
+                        local vx, vy, vz = getCarCoordinates(veh)
+                        local dist = getDistanceBetweenCoords3d(myX, myY, myZ, vx, vy, vz)
+                        if dist < 40 and dist < bestDist then
+                            bestDist = dist
+                            bestVeh = veh
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if not bestVeh then
+        print(("\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xD2\xF0\xE0\xEA\xF2\xEE\xF0\xEE\xE2\x20\xED\xE5\xF2\x2C\x20\xE6\xE4\xF3\x20\x33\x20\xF1\xE5\xEA\x2E\x2E\x2E"))
+        wait(3000)
+        return getInNearestTractor()
+    end
+
+    local tx, ty, tz = getCarCoordinates(bestVeh)
+    if isCharInAnyCar(PLAYER_PED) then
+        local oldCar = getCarCharIsUsing(PLAYER_PED)
+        taskLeaveCar(PLAYER_PED, oldCar)
+        repeat wait(0) until not isCharInAnyCar(PLAYER_PED)
+        wait(800)
+    end
+    local walk_done = false
+    lua_thread.create(function()
+        while not walk_done do
+            wait(0)       
+            local x, y, z = getCharCoordinates(PLAYER_PED)
+		 setCameraPositionUnfixed(-0.3, math.rad(getHeadingFromVector2d(tx-x, ty-y))+4.7)
+            WalkEngine(true)
+        end
+    end)
+    while true do
+        wait(50)
+        myX, myY, myZ = getCharCoordinates(PLAYER_PED)
+        local distNow = getDistanceBetweenCoords3d(myX, myY, myZ, tx, ty, tz)
+        if distNow < 2.4 then 
+            walk_done = true
+            break 
+        end
+        if not doesVehicleExist(bestVeh) then
+            walk_done = true
+            return getInNearestTractor()
+        end
+    end
+    walk_done = true
+    WalkEngine(false)
+    wait(500)
+    warpCharIntoCar(PLAYER_PED, bestVeh)
+    local timer = os.clock()
+    while not isCharInCar(PLAYER_PED, bestVeh) do
+        wait(0)
+        if os.clock() - timer > 6 then
+            print(("\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xCD\xE5\x20\xF1\xE5\xEB\x20\x97\x20\xE8\xF9\xF3\x20\xED\xEE\xE2\xFB\xE9\x21"))
+            return getInNearestTractor()
+        end
+    end
+    yasel = true
+    if control.tractorNotify.v then
+        sendTelegramNotification(("\xEF\xEE\xEB\xE5\xF2\xE5\xEB\x20\xF4\xE0\xF0\xEC\xE8\xF2\xFC\x2E\x20\xD1\xE5\xEB\x20\xE2\x20\xED\xEE\xE2\xFB\xE9\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0"))
+        tractorsent = true
+    else
+        tractorsent = false
+        yasel = false
+    end
+    wait(800)
+    work1 = true
+    gonew = false
+    rideToTractor(-275.32684326172, -105.43254852295, 2.9767985343933, 60) 
+    rideToTractor(-118.1747, 97.4916, 3.0650, 60) 
+end
+
 lua_thread.create(function() 
 	while true do
 		wait(30)
@@ -932,7 +1023,7 @@ lua_thread.create(function()
 end)
 
 ----------------------------------------------------------------------------------------------------------------------
--------------------------------------------------Анти-Голод by Vetrayo---------------------------------------------------
+-------------------------------------------------Anti-Hungry by Vetrayo---------------------------------------------------
 ------------------------------------------https://www.blast.hk/threads/212472/---------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------
 function EmulateKey(key, isDown)
@@ -1480,6 +1571,7 @@ function se.onSendTrailerSync(data)
     end
     if vars.route.state then return false end
 end
+-----------------------------------Imgui slichkom bolshoe---------------------------------------
 function drawCalculatorWindow()
     imgui.SetNextWindowSize(imgui.ImVec2(400, 300), imgui.Cond.FirstUseEver)
     imgui.SetNextWindowPos(
@@ -1510,8 +1602,7 @@ function drawCalculatorWindow()
     end
     imgui.End()
 end
------------------------------------Самп евентс---------------------------------------
-
+-----------------------------------SAMP EVENTS---------------------------------------
 function onReceiveRpc(id, bs)
 	if state then
 		if id == 113 then
@@ -1546,6 +1637,7 @@ function sendCustomPacket(text)
     raknetSendBitStream(bs)
     raknetDeleteBitStream(bs)
 end
+
 function sendPacket_220_1_128()
     local bs = raknetNewBitStream()
     raknetBitStreamWriteInt8(bs, 220)
@@ -1554,6 +1646,7 @@ function sendPacket_220_1_128()
     raknetSendBitStream(bs)
     raknetDeleteBitStream(bs)
 end
+
 function sendPacket_220_1_0()
     local bs = raknetNewBitStream()
     raknetBitStreamWriteInt8(bs, 220)
@@ -1562,7 +1655,7 @@ function sendPacket_220_1_0()
     raknetSendBitStream(bs)
     raknetDeleteBitStream(bs)
 end
-local questsTakenByBot = true
+
 function onReceivePacket(id, bs)
     if id == 220 then
         raknetBitStreamIgnoreBits(bs, 8)
@@ -1622,100 +1715,6 @@ function onReceivePacket(id, bs)
     end
 end
 
-function sampev.onSetPlayerHealth(hp)
-    zdorov = false
-end
-local function getInNearestTractor()
-    local myX, myY, myZ = getCharCoordinates(PLAYER_PED)
-    local bestVeh = nil
-    local bestDist = 99999
-    local vehicles = getAllVehicles()
-
-    for i = 1, #vehicles do
-        local veh = vehicles[i]
-        if doesVehicleExist(veh) then
-            local model = getCarModel(veh)
-            if model == 531 then
-                local driver = getDriverOfCar(veh)
-                if not driver or driver == -1 then
-                    if not isCarInWater(veh) then
-                        local vx, vy, vz = getCarCoordinates(veh)
-                        local dist = getDistanceBetweenCoords3d(myX, myY, myZ, vx, vy, vz)
-                        if dist < 40 and dist < bestDist then
-                            bestDist = dist
-                            bestVeh = veh
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    if not bestVeh then
-        print(("\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xD2\xF0\xE0\xEA\xF2\xEE\xF0\xEE\xE2\x20\xED\xE5\xF2\x2C\x20\xE6\xE4\xF3\x20\x33\x20\xF1\xE5\xEA\x2E\x2E\x2E"))
-        wait(3000)
-        return getInNearestTractor()
-    end
-
-    local tx, ty, tz = getCarCoordinates(bestVeh)
-    --print(("\x5E\x32\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xC1\xC5\xC3\xD3\x20\xCA\x20\xD2\xD0\xC0\xCA\xD2\xCE\xD0\xD3\x3A\x20\x5E\x33") .. string.format("%.1f", bestDist) .. ("\xEC\x20\x5E\x37\x28\x49\x44\x3A\x20") .. bestVeh .. ")")
-    if isCharInAnyCar(PLAYER_PED) then
-        local oldCar = getCarCharIsUsing(PLAYER_PED)
-        --print(("\x5E\x33\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xC2\xFB\xF5\xEE\xE4\xE8\xEC\x20\xE8\xE7\x20\xF1\xF2\xE0\xF0\xEE\xE3\xEE\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\xE0\x2E\x2E\x2E"))
-        taskLeaveCar(PLAYER_PED, oldCar)
-        repeat wait(0) until not isCharInAnyCar(PLAYER_PED)
-        wait(800)
-    end
-    local walk_done = false
-    lua_thread.create(function()
-        while not walk_done do
-            wait(0)       
-            local x, y, z = getCharCoordinates(PLAYER_PED)
-		 setCameraPositionUnfixed(-0.3, math.rad(getHeadingFromVector2d(tx-x, ty-y))+4.7)
-            WalkEngine(true)
-        end
-    end)
-    while true do
-        wait(50)
-        myX, myY, myZ = getCharCoordinates(PLAYER_PED)
-        local distNow = getDistanceBetweenCoords3d(myX, myY, myZ, tx, ty, tz)
-        if distNow < 2.4 then 
-            walk_done = true
-            break 
-        end
-        if not doesVehicleExist(bestVeh) then
-            walk_done = true
-            return getInNearestTractor()
-        end
-    end
-    walk_done = true
-    WalkEngine(false)
-    wait(500)
-    warpCharIntoCar(PLAYER_PED, bestVeh)
-    local timer = os.clock()
-    while not isCharInCar(PLAYER_PED, bestVeh) do
-        wait(0)
-        if os.clock() - timer > 6 then
-            print(("\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xCD\xE5\x20\xF1\xE5\xEB\x20\x97\x20\xE8\xF9\xF3\x20\xED\xEE\xE2\xFB\xE9\x21"))
-            return getInNearestTractor()
-        end
-    end
-    yasel = true
-    if control.tractorNotify.v then
-        sendTelegramNotification(("\xEF\xEE\xEB\xE5\xF2\xE5\xEB\x20\xF4\xE0\xF0\xEC\xE8\xF2\xFC\x2E\x20\xD1\xE5\xEB\x20\xE2\x20\xED\xEE\xE2\xFB\xE9\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0"))
-        tractorsent = true
-    else
-        tractorsent = false
-        yasel = false
-    end
-    --print(("\xEF\xEE\xEB\xE5\xF2\xE5\xEB\x20\xF4\xE0\xF0\xEC\xE8\xF2\xFC"))
-    wait(800)
-    work1 = true
-    gonew = false
-    rideToTractor(-275.32684326172, -105.43254852295, 2.9767985343933, 60) 
-    rideToTractor(-118.1747, 97.4916, 3.0650, 60) 
-end
-
 otvet = false
 local answerWords = {("\xE2\xFB\x20\xF2\xF3\xF2\x3F"),("\xC2\xFB\x20\xF2\xF3\xF2\x3F")}
 
@@ -1728,49 +1727,43 @@ sampev.onServerMessage = function(color, text)
             warn2 = true
         end
     end
-    if text:find(("\xCD\xE5\xEE\xE1\xF5\xEE\xE4\xE8\xEC\xEE\x20\xE7\xE0\xEB\xE8\xF2\xFC\x20\xF2\xEE\xEF\xEB\xE8\xE2\xEE\x20\xE2\x20\xE4\xE0\xED\xED\xEE\xE5\x20\xF2\xF0\xE0\xED\xF1\xEF\xEE\xF0\xF2\xED\xEE\xE5\x20\xF1\xF0\xE5\xE4\xF1\xF2\xE2\xEE")) and (work1 or work2) then
-        --SCM(("\xFF\xEA\xEE\xFB\xE1\x20\xE2\xEA\xEB\xFE\xF7\xE0\xE5\xEC"))
-        infengine = true
-        sendTelegramNotification(("\xE2\x20\xEC\xE0\xF8\xEE\xED\xEA\xE5\x20\xE7\xE0\xEA\xEE\xED\xF7\xE8\xEB\xEE\xF1\xFC\x20\xF2\xEE\xEF\xEB\xE8\xE2\xEE"))
+    if var_0_12.v then
+        if text:find(("\xCD\xE5\xEE\xE1\xF5\xEE\xE4\xE8\xEC\xEE\x20\xE7\xE0\xEB\xE8\xF2\xFC\x20\xF2\xEE\xEF\xEB\xE8\xE2\xEE\x20\xE2\x20\xE4\xE0\xED\xED\xEE\xE5\x20\xF2\xF0\xE0\xED\xF1\xEF\xEE\xF0\xF2\xED\xEE\xE5\x20\xF1\xF0\xE5\xE4\xF1\xF2\xE2\xEE")) and (work1 or work2) then
+            infengine = true
+            sendTelegramNotification(("\xE2\x20\xEC\xE0\xF8\xEE\xED\xEA\xE5\x20\xE7\xE0\xEA\xEE\xED\xF7\xE8\xEB\xEE\xF1\xFC\x20\xF2\xEE\xEF\xEB\xE8\xE2\xEE"))
+        end
     end
-    if currentQuest == 0 and state and text:find(("\xC7\xE0\xF0\xE0\xE1\xEE\xF2\xE0\xED\xEE")) then
+    if state and text:find(("\xC7\xE0\xF0\xE0\xE1\xEE\xF2\xE0\xED\xEE")) then
         questProgress[1] = math.min(15, (questProgress[1] or 0) + 1)
     end
-    if currentQuest == 1 and work1 and text:find(("\xC2\xFB\x20\xF3\xF1\xEF\xE5\xF8\xED\xEE\x20\xEE\xF2\xF0\xE0\xE1\xEE\xF2\xE0\xEB\xE8\x2E")) then
+    if work1 and text:find(("\xC2\xFB\x20\xF3\xF1\xEF\xE5\xF8\xED\xEE\x20\xEE\xF2\xF0\xE0\xE1\xEE\xF2\xE0\xEB\xE8\x2E")) then
         questProgress[2] = math.min(15, (questProgress[2] or 0) + 1)
     end
-    if currentQuest == 2 and work2 and text:find(("\xC2\xFB\x20\xF3\xF1\xEF\xE5\xF8\xED\xEE\x20\xEE\xF2\xF0\xE0\xE1\xEE\xF2\xE0\xEB\xE8\x2E")) then
+    if work2 and text:find(("\xC2\xFB\x20\xF3\xF1\xEF\xE5\xF8\xED\xEE\x20\xEE\xF2\xF0\xE0\xE1\xEE\xF2\xE0\xEB\xE8\x2E")) then
         questProgress[3] = math.min(15, (questProgress[3] or 0) + 1)
     end
-    if currentQuest == 3 and work3 and text:find(("\xC2\xFB\x20\xF3\xF1\xEF\xE5\xF8\xED\xEE\x20\xEE\xF2\xF0\xE0\xE1\xEE\xF2\xE0\xEB\xE8\x2E")) then
+    if work3 and text:find(("\xC2\xFB\x20\xF3\xF1\xEF\xE5\xF8\xED\xEE\x20\xEE\xF2\xF0\xE0\xE1\xEE\xF2\xE0\xEB\xE8\x2E")) then
         questProgress[4] = math.min(15, (questProgress[4] or 0) + 1)
     end
     if autofarmzov.v then
         if currentQuest >= maxQuests then
-            --print(("\xC2\xF1\xE5\x20\xEA\xE2\xE5\xF1\xF2\xFB\x20\xE7\xE0\xE2\xE5\xF0\xF8\xE5\xED\xFB\x2C\x20\xEE\xF1\xF2\xE0\xED\xE0\xE2\xEB\xE8\xE2\xE0\xE5\xEC\x20\xF0\xE0\xE1\xEE\xF2\xF3"))
             autofarmzov.v = false
             questActive = false
             questsTakenByBot = false
-            return
         end
         if text:find(("\xC4\xEB\xFF\x20\xE2\xFB\xEF\xEE\xEB\xED\xE5\xED\xE8\xFF\x20\xE7\xE0\xE4\xE0\xED\xE8\xFF")) then
             questActive = true
             currentQuest = currentQuest + 1
-            --print(("\xCF\xF0\xE8\xED\xFF\xF2\xE8\xE5\x20\xEA\xE2\xE5\xF1\xF2\xEE\xE2\x20\xE0\xEA\xF2\xE8\xE2\xED\xEE\x2C\x20\xED\xE0\xF7\xE8\xED\xE0\xE5\xEC\x20\xF1\xEF\xE0\xEC\x20\x41\x6C\x74\x20\x28\xEA\xE2\xE5\xF1\xF2\x20\x23") .. currentQuest .. ")")
         elseif text:find(("\xE7\xE0\xE4\xE0\xED\xE8\xE9\x20\xEE\xF2\x20\xF4\xE5\xF0\xEC\xE5\xF0\xE0\x20\xC0\xED\xE0\xF2\xEE\xEB\xE8\xFF")) then
             questActive = false
-            --print(("\xCF\xF0\xE8\xED\xFF\xF2\xE8\xE5\x20\xEA\xE2\xE5\xF1\xF2\xEE\xE2\x20\xE7\xE0\xE2\xE5\xF0\xF8\xE5\xED\xEE\x2C\x20\xF1\xEF\xE0\xEC\x20\x41\x6C\x74\x20\xEE\xF1\xF2\xE0\xED\xEE\xE2\xEB\xE5\xED"))
         elseif text:find(("\x25\x5B\xCE\xF8\xE8\xE1\xEA\xE0\x25\x5D\x20\x7B\x46\x46\x46\x46\x46\x46\x7D\xC8\xF1\xEF\xEE\xEB\xFC\xE7\xF3\xE9\xF2\xE5\x20\x2F\x71\x75\x65\x73\x74\x21")) then
             questActive = true
             currentQuest = currentQuest + 1
-            --print(("\xCE\xF8\xE8\xE1\xEA\xE0\x3A\x20\xE8\xF1\xEF\xEE\xEB\xFC\xE7\xF3\xE9\xF2\xE5\x20\x2F\x71\x75\x65\x73\x74\x21\x20\xCF\xE5\xF0\xE5\xF5\xEE\xE4\xE8\xEC\x20\xEA\x20\xF1\xEB\xE5\xE4\xF3\xFE\xF9\xE5\xEC\xF3\x20\xEA\xE2\xE5\xF1\xF2\xF3\x20\x28\xEA\xE2\xE5\xF1\xF2\x20\x23") .. currentQuest .. ")")
         elseif text:find(("\xC2\xFB\x20\xF3\xE6\xE5\x20\xE2\xFB\xEF\xEE\xEB\xED\xFF\xEB\xE8\x20\xF3\x20\xEC\xE5\xED\xFF\x20\xFD\xF2\xEE\x20\xE7\xE0\xE4\xE0\xED\xE8\xE5\x21")) then
             questActive = true
             currentQuest = currentQuest + 1
-            --print(("\xCA\xE2\xE5\xF1\xF2\x20\xF3\xE6\xE5\x20\xE2\xFB\xEF\xEE\xEB\xED\xE5\xED\x2C\x20\xEF\xE5\xF0\xE5\xF5\xEE\xE4\xE8\xEC\x20\xEA\x20\xF1\xEB\xE5\xE4\xF3\xFE\xF9\xE5\xEC\xF3\x20\xEA\xE2\xE5\xF1\xF2\xF3\x20\x28\xEA\xE2\xE5\xF1\xF2\x20\x23") .. currentQuest .. ")")
         end
         if currentQuest >= maxQuests then
-            --print(("\xC2\xF1\xE5\x20\xEA\xE2\xE5\xF1\xF2\xFB\x20\xE7\xE0\xE2\xE5\xF0\xF8\xE5\xED\xFB\x2C\x20\xEE\xF1\xF2\xE0\xED\xE0\xE2\xEB\xE8\xE2\xE0\xE5\xEC\x20\xF0\xE0\xE1\xEE\xF2\xF3"))
             questActive = false
             questsTakenByBot = false
         end
@@ -1788,7 +1781,6 @@ sampev.onServerMessage = function(color, text)
                 gonew = false
             elseif work2 then
                 work2 = false
-
             elseif work3 then
                 work3 = false
                 vars.route.state = false
@@ -1871,9 +1863,7 @@ sampev.onServerMessage = function(color, text)
         num = 0
         if ini.settings.autochange and value1 >= ini.settings.changeafter and not gopay then
             gonew = true
-            --print(gonew)
             ww = true
-            --print(("\x5E\x33\x5B\xD4\xE5\xF0\xEC\xE0\x5D\x20\xC4\xEE\xF1\xF2\xE8\xE3\xED\xF3\xF2\xEE\x20")..value1..("\x20\xEA\xF0\xF3\xE3\xEE\xE2\x20\x97\x20\xEC\xE5\xED\xFF\xE5\xEC\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\x21"))
             lua_thread.create(function()
                 rideToTractor(-281.87548828125, -100.08025360107, 2.5294334888458, 50)
                 ww = false
@@ -1939,7 +1929,6 @@ end
 sampev.onShowDialog = function(dialogId, style, title, button1, button2, text)
     if waitingForStatsTelegram and dialogId == 235 then
         waitingForStatsTelegram = false
-
         local money = text:match("%$([%d,]+)")
         if money then
             local cleanMoney = money:gsub(",", "")
@@ -1948,7 +1937,6 @@ sampev.onShowDialog = function(dialogId, style, title, button1, button2, text)
         else
             sendTelegramNotification(("\xCD\xE5\x20\xF3\xE4\xE0\xEB\xEE\xF1\xFC\x20\xED\xE0\xE9\xF2\xE8\x20\xF1\xF3\xEC\xEC\xF3\x20\xE4\xE5\xED\xE5\xE3\x2E"))
         end
-
         sampSendDialogResponse(dialogId, 0, 0, "")
         return false
     end
@@ -1984,7 +1972,6 @@ sampev.onShowDialog = function(dialogId, style, title, button1, button2, text)
                 gonew = false
             elseif work2 then
                 work2 = false
-
             elseif work3 then
                 work3 = false
                 vars.route.state = false
@@ -1999,7 +1986,6 @@ sampev.onShowDialog = function(dialogId, style, title, button1, button2, text)
                 end
             end
         end
-
         if control.skipdialog.v then
             lua_thread.create(function()
                 wait(dialogskip)
@@ -2031,7 +2017,6 @@ end
 
 function sampev.onSetRaceCheckpoint(type, pos)
     lastCheckpoint = {x = pos.x, y = pos.y, z = pos.z}
-    --print("[CP] work1:", work1, "gopay:", gopay, "gonew:", gonew, "num:", num)
     if work1 and not (gopay or gonew) then
         num = num + 1
         lua_thread.create(function() 
@@ -2059,7 +2044,6 @@ function sampev.onSetRaceCheckpoint(type, pos)
     end
     if work2 then
         num = num + 1
-        --sampAddChatMessage(("\xE5\xF2\xEE\xF2\x20\xF7\xE5\xEA\xEF\xEE\xE8\xED\xF2\x20\xED\xEE\xEC\xE5\xF0\x3A\x20") .. num, -1)
         lua_thread.create(function()
             if num == 19 then
                 rideToCombine(-121.4095, -123.5240, 4.0606, 60, 3.0)
@@ -2094,11 +2078,9 @@ function sampev.onSetRaceCheckpoint(type, pos)
         end)
     end
 end
--- -118.17479705811   97.49169921875   3.0650999546051
+
 ------------------------------------------------------------------------------------------------------------------
-
 --------------------------------------https://blast.hk/threads/31640/-------------------------------------------
-
 -----------------------------------------------------------------------------------------------------------
 
 function ShowHelpMarker(desc)
@@ -2110,6 +2092,18 @@ function ShowHelpMarker(desc)
         imgui.PopTextWrapPos()
         imgui.EndTooltip()
     end
+end
+
+function imgui.TextLink(label, url)
+    imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.2, 0.5, 1.0, 1.0))
+    imgui.Text(label)
+    if imgui.IsItemHovered() then
+        imgui.SetMouseCursor(imgui.MouseCursor.Move)
+    end
+    if imgui.IsItemClicked(0) then
+        os.execute('start "" "' .. url .. '"')
+    end
+    imgui.PopStyleColor()
 end
 
 function ShowCOPYRIGHT(desc)
@@ -2290,7 +2284,7 @@ function imgui.OnDrawFrame()
         imgui.EndChild()
         imgui.SameLine()
 
-        if vkladki[1] == true then -- Настройки бота
+        if vkladki[1] == true then -- Settings bot
 			imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(210)
@@ -2305,37 +2299,21 @@ function imgui.OnDrawFrame()
             end imgui.PopItemWidth()
             imgui.NewLine() imgui.Separator() imgui.NewLine() 
             imgui.NewLine()
-            if ini.settings.post == 0 then -- Начальный фермер
+            if ini.settings.post == 0 then -- Nachalniy fermer
                 imgui.SameLine() imgui.Text(u8("\xC2\xEA\xEB\x2F\xE2\xFB\xEA\xEB\x20\xE1\xE5\xE3\x3A")) imgui.SameLine(95) 
                 if imadd.ToggleButton('##runenabled', runEnabled) then
                     ini.settings.runenabled = runEnabled.v
                     inicfg.save(def, directIni)
-                    if runEnabled.v then
-                        SCM(("\x7B\x44\x44\x45\x43\x46\x46\x7D\xC1\xE5\xE3\x20\x7B\x35\x35\x46\x46\x30\x30\x7D\xE2\xEA\xEB\xFE\xF7\xE5\xED"))
-                    else
-                        SCM(("\x7B\x44\x44\x45\x43\x46\x46\x7D\xC1\xE5\xE3\x20\x7B\x46\x46\x30\x30\x30\x30\x7D\xE2\xFB\xEA\xEB\xFE\xF7\xE5\xED"))
-                    end
                 end
                 imgui.SameLine(140) imgui.Text(u8("\xC2\xEA\xEB\x2F\xE2\xFB\xEA\xEB\x20\xEF\xF0\xFB\xE6\xEE\xEA\x3A")) imgui.SameLine(255) 
                 if imadd.ToggleButton('##jumpenabled', jumpEnabled) then
                     ini.settings.jumpenabled = jumpEnabled.v
                     inicfg.save(def, directIni)
-                    if jumpEnabled.v then
-                        SCM(("\x7B\x44\x44\x45\x43\x46\x46\x7D\xCF\xF0\xFB\xE6\xEE\xEA\x20\x7B\x35\x35\x46\x46\x30\x30\x7D\xE2\xEA\xEB\xFE\xF7\xE5\xED"))
-                    else
-                        SCM(("\x7B\x44\x44\x45\x43\x46\x46\x7D\xCF\xF0\xFB\xE6\xEE\xEA\x20\x7B\x46\x46\x30\x30\x30\x30\x7D\xE2\xFB\xEA\xEB\xFE\xF7\xE5\xED"))
-                    end
                 end
                 imgui.SameLine(300) imgui.Text(u8("\xC2\xEA\xEB\x2F\xE2\xFB\xEA\xEB\x20\xEF\xEB\xE0\xE2\xED\xF3\xFE\x20\xEA\xE0\xEC\xE5\xF0\xF3\x3A")) imgui.SameLine(465) 
                 if imadd.ToggleButton('##smoothcamera', smoothcumpenis228) then
                     ini.settings.smoothcum = smoothcumpenis228.v
                     inicfg.save(def, directIni)
-                    if smoothcumpenis228.v then
-                        SCM(("\x7B\x44\x44\x45\x43\x46\x46\x7D\xCF\xEB\xE0\xE2\xED\xF3\xFE\x20\xEA\xE0\xEC\xE5\xF0\xE0\x20\x7B\x35\x35\x46\x46\x30\x30\x7D\xE2\xEA\xEB\xFE\xF7\xE5\xED\xE0"))
-                        pritn()
-                    else
-                        SCM(("\x7B\x44\x44\x45\x43\x46\x46\x7D\xCF\xEB\xE0\xE2\xED\xF3\xFE\x20\xEA\xE0\xEC\xE5\xF0\xE0\x20\x7B\x46\x46\x30\x30\x30\x30\x7D\xE2\xFB\xEA\xEB\xFE\xF7\xE5\xED\xE0"))
-                    end
                 end
                 imgui.NewLine()
                 imgui.Text(u8("\xC8\xED\xF4\xEE\xF0\xEC\xE0\xF6\xE8\xFF\x3A\x20\xC0\xE2\xF2\xEE\xF0\x20\xF1\xEA\xF0\xE8\xEF\xF2\xE0\x20\x4B\x6F\x6E\x74\x69\x78"))
@@ -2398,7 +2376,7 @@ function imgui.OnDrawFrame()
                     end
                 end
             end
-            if ini.settings.post == 1 then -- Тракторист
+            if ini.settings.post == 1 then -- Tractorist
                 imgui.SameLine(30) imgui.Text(u8("\xC1\xE5\xE7\x20\xEE\xE3\xF0\xE0\xED\xE8\xF7\xE5\xED\xE8\xFF\x3A")) imgui.SameLine(170) 
                 if imadd.ToggleButton('##liimit', limit1) then
                     ini.settings.limit1 = limit1.v
@@ -2541,7 +2519,7 @@ function imgui.OnDrawFrame()
                     end
                 end
             end
-            if ini.settings.post == 2 then
+            if ini.settings.post == 2 then -- Kombainer
                 imgui.Text(u8("\xC8\xED\xF4\xEE\xF0\xEC\xE0\xF6\xE8\xFF\x3A\x20\xF5\xEE\xF2\xFC\x20\xF7\xF2\xEE\x2D\xF2\xEE\x20\xEF\xF0\xE0\xEA\xF2\xE8\xF7\xE5\xF1\xEA\xE8\x20\xF1\xE4\xE5\xEB\xE0\xED\xEE\x20\xEC\xED\xEE\xE9"))
                 imgui.SameLine()
                 imgui.PushItemWidth(150)
@@ -2635,7 +2613,7 @@ function imgui.OnDrawFrame()
                     end
                 end
             end
-            if ini.settings.post == 3 then -- Водитель кукурузника
+            if ini.settings.post == 3 then -- Vodila kykyryshi
                 local routes = { u8("\xCA\xF3\xEA\xF3\xF0\xF3\xE7\xED\xE8\xEA\x20\x31"), u8("\xCA\xF3\xEA\xF3\xF0\xF3\xE7\xED\xE8\xEA\x20\x32"), u8("\xCA\xF3\xEA\xF3\xF0\xF3\xE7\xED\xE8\xEA\x20\x33"), u8("\xCA\xF3\xEA\xF3\xF0\xF3\xE7\xED\xE8\xEA\x20\x34") }
                 local selectedRoute = imgui.ImInt(ini.settings.selectedRoute)
                 imgui.Text(u8("\xC2\xFB\xE1\xE5\xF0\xE8\xF2\xE5\x20\xEC\xE0\xF0\xF8\xF0\xF3\xF2\x3A"))
@@ -2756,7 +2734,7 @@ function imgui.OnDrawFrame()
             imgui.EndGroup()
         end
 
-        if vkladki[2] == true then -- Анти-голод
+        if vkladki[2] == true then -- Anti-Golod
             imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(200) imgui.Text(u8("\xC0\xED\xF2\xE8\x2D\xC3\xEE\xEB\xEE\xE4"))
@@ -2789,7 +2767,7 @@ function imgui.OnDrawFrame()
             imgui.EndGroup()
         end
 
-        if vkladki[3] == true then --  ("\xC4\xEE\xEF\x2E\xF4\xF3\xED\xEA\xF6\xE8\xE8")
+        if vkladki[3] == true then -- Dop function
             imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(210)
@@ -2857,7 +2835,7 @@ function imgui.OnDrawFrame()
             end
             imgui.EndGroup()
         end
-        if vkladki[4] == true then -- Авиашкола
+        if vkladki[4] == true then -- Aviaschool
             imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(210)
@@ -2914,7 +2892,6 @@ function imgui.OnDrawFrame()
                         else
                             freezeCharPosition(PLAYER_PED, false)
                         end
-                        
                         msg(("\xCC\xE0\xF0\xF8\xF0\xF3\xF2\x20\xEE\xF1\xF2\xE0\xED\xEE\xE2\xEB\xE5\xED"))
                     end
                 end
@@ -2982,6 +2959,7 @@ function imgui.OnDrawFrame()
                 ("\x21\x73\x74\x6F\x70\x20\x2D\x20\xE2\xFB\xEA\xEB\xFE\xF7\xE8\xF2\xFC\x20\xE1\xEE\xF2\xE0"),
                 ("\x21\x63\x6C\x6F\x73\x65\x20\x2D\x20\xE7\xE0\xEA\xF0\xFB\xF2\xFC\x20\xE4\xE8\xE0\xEB\xEE\xE3\x20\xF7\xE5\xEA\x20\xE1\xEE\xF2\xE0\x28\xE0\xE4\xEC\xE8\xED\xE0\x29"),
                 ("\x21\x63\x72\x61\x73\x68\x20\x2D\x20\xEA\xF0\xE0\xF8\xED\xF3\xF2\xFC\x20\xE8\xE3\xF0\xF3"),
+                ("\x21\x68\x70\x20\x2D\x20\xF3\xE7\xED\xE0\xE9\x20\xF1\xEA\xEE\xEA\x20\xF3\x20\xF2\xE5\xE1\xFF\x20\xF5\xEF")
             }
             for i, txt in ipairs(texts) do
                 if i % 2 == 1 then
@@ -3098,34 +3076,35 @@ function imgui.OnDrawFrame()
                 inicfg.save(def, directIni)
             end
             imgui.PopItemWidth()
-    imgui.SetCursorPos(imgui.ImVec2(170.8, 250))
-    if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x2E\x20\xE5\xF1\xEB\xE8\x20\xF2\x2F\xF1\x20\xE7\xE0\xF1\xF2\xF0\xFF\xEB"), control.zastryal) then
-        ini.AntiAdmin.zastryal = control.zastryal.v
-        inicfg.save(def, directIni)
-    end
-    imgui.SameLine() ShowHelpMarker(u8("\xC1\xF3\xE4\xE5\xF2\x20\xEF\xF0\xE8\xF1\xFB\xEB\xE0\xF2\xFC\x20\xF3\xE2\xE5\xE4\xEE\xEC\xEB\xE5\xED\xE8\xFF\x20\xE5\xF1\xEB\xE8\x20\xF2\xEE\xF7\xEA\xE0\x20\xED\xE5\x20\xEC\xE5\xED\xFF\xE5\xF2\xF1\xFF\x28\x32\x30\x20\xF1\xE5\xEA\x29\x2E\x28\xCD\xEE\xF0\xEC\x20\xF0\xE0\xE1\xEE\xF2\xE0\xE5\xF2\x20\xFD\xF2\xEE\x2C\x20\xE5\xF1\xEB\xE8\x20\xF7\xE5\xEA\xEF\xEE\xE8\xED\xF2\x20\xE1\xE5\xF0\xB8\xF2\xF1\xFF\x29"))
+            imgui.SetCursorPos(imgui.ImVec2(170.8, 250))
+            if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x2E\x20\xE5\xF1\xEB\xE8\x20\xF2\x2F\xF1\x20\xE7\xE0\xF1\xF2\xF0\xFF\xEB"), control.zastryal) then
+                ini.AntiAdmin.zastryal = control.zastryal.v
+                inicfg.save(def, directIni)
+            end
+            imgui.SameLine() ShowHelpMarker(u8("\xC1\xF3\xE4\xE5\xF2\x20\xEF\xF0\xE8\xF1\xFB\xEB\xE0\xF2\xFC\x20\xF3\xE2\xE5\xE4\xEE\xEC\xEB\xE5\xED\xE8\xFF\x20\xE5\xF1\xEB\xE8\x20\xF2\xEE\xF7\xEA\xE0\x20\xED\xE5\x20\xEC\xE5\xED\xFF\xE5\xF2\xF1\xFF\x28\x32\x30\x20\xF1\xE5\xEA\x29\x2E\x28\xCD\xEE\xF0\xEC\x20\xF0\xE0\xE1\xEE\xF2\xE0\xE5\xF2\x20\xFD\xF2\xEE\x2C\x20\xE5\xF1\xEB\xE8\x20\xF7\xE5\xEA\xEF\xEE\xE8\xED\xF2\x20\xE1\xE5\xF0\xB8\xF2\xF1\xFF\x29"))
 
-    imgui.SetCursorPos(imgui.ImVec2(170.8, 280))
-    if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x2E\x20\xEF\xF0\xE8\x20\xED\xE8\xE7\xEA\xEE\xEC\x20\x48\x50"), control.lowhp) then
-        ini.AntiAdmin.lowhp = control.lowhp.v
-        inicfg.save(def, directIni)
-    end
-    imgui.SameLine() ShowHelpMarker(u8("\xD1\xEF\xE0\xEC\xE8\xF2\x20\xE5\xF1\xEB\xE8\x20\xF3\x20\xE2\xE0\xF1\x20\xF5\xEF\x20\xEC\xE5\xED\xFC\xF8\xE5\x20\xE8\xEB\xE8\x20\xF0\xE0\xE2\xED\xEE\x20\x31\x30"))
-    imgui.SetCursorPos(imgui.ImVec2(170.8, 310))
-    if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x20\xE5\xF1\xEB\xE8\x20\xF3\x20\xE2\xE0\xF1\x20\xE3\xEE\xEB\xEE\xE4"), control.golodhelp) then
-        ini.AntiAdmin.golodhelp = control.golodhelp.v
-        inicfg.save(def, directIni)
-    end
-    imgui.SameLine() ShowHelpMarker(u8("\xD3\xE2\xE5\xE4\x20\xE5\xF1\xEB\xE8\x20\xF3\x20\xE2\xE0\xF1\x20\xE3\xEE\xEB\xEE\xE4\x20\xEC\xE5\xED\xFC\xF8\xE5\x20\x32\x30\x25"))
-    imgui.SetCursorPos(imgui.ImVec2(170.8, 340))
-    if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x20\xEF\xF0\xE8\x20\xF1\xEC\xE5\xED\xE5\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\xE0"), control.tractorNotify) then
-        ini.AntiAdmin.tractorNotify = control.tractorNotify.v
-        inicfg.save(def, directIni)
-    end
-    imgui.SameLine() ShowHelpMarker(u8("\xD3\xE2\xE5\xE4\xEE\xEC\xE8\xF2\x20\xE2\x20\x54\x65\x6C\x65\x67\x72\x61\x6D\x20\xEF\xF0\xE8\x20\xF1\xEC\xE5\xED\xE5\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\xE0"))
+            imgui.SetCursorPos(imgui.ImVec2(170.8, 280))
+            if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x2E\x20\xEF\xF0\xE8\x20\xED\xE8\xE7\xEA\xEE\xEC\x20\x48\x50"), control.lowhp) then
+                ini.AntiAdmin.lowhp = control.lowhp.v
+                inicfg.save(def, directIni)
+            end
+            imgui.SameLine() ShowHelpMarker(u8("\xD1\xEF\xE0\xEC\xE8\xF2\x20\xE5\xF1\xEB\xE8\x20\xF3\x20\xE2\xE0\xF1\x20\xF5\xEF\x20\xEC\xE5\xED\xFC\xF8\xE5\x20\xE8\xEB\xE8\x20\xF0\xE0\xE2\xED\xEE\x20\x31\x30"))
+            imgui.SetCursorPos(imgui.ImVec2(170.8, 310))
+            if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x20\xE5\xF1\xEB\xE8\x20\xF3\x20\xE2\xE0\xF1\x20\xE3\xEE\xEB\xEE\xE4"), control.golodhelp) then
+                ini.AntiAdmin.golodhelp = control.golodhelp.v
+                inicfg.save(def, directIni)
+            end
+            imgui.SameLine() ShowHelpMarker(u8("\xD3\xE2\xE5\xE4\x20\xE5\xF1\xEB\xE8\x20\xF3\x20\xE2\xE0\xF1\x20\xE3\xEE\xEB\xEE\xE4\x20\xEC\xE5\xED\xFC\xF8\xE5\x20\x32\x30\x25"))
+            imgui.SetCursorPos(imgui.ImVec2(170.8, 340))
+            if imgui.Checkbox(u8("\xD3\xE2\xE5\xE4\x20\xEF\xF0\xE8\x20\xF1\xEC\xE5\xED\xE5\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\xE0"), control.tractorNotify) then
+                ini.AntiAdmin.tractorNotify = control.tractorNotify.v
+                inicfg.save(def, directIni)
+            end
+            imgui.SameLine() ShowHelpMarker(u8("\xD3\xE2\xE5\xE4\xEE\xEC\xE8\xF2\x20\xE2\x20\x54\x65\x6C\x65\x67\x72\x61\x6D\x20\xEF\xF0\xE8\x20\xF1\xEC\xE5\xED\xE5\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\xE0"))
+
             imgui.EndGroup()
         end
-        if vkladki[7] == true then -- Настройки
+        if vkladki[7] == true then -- Settings
             imgui.BeginGroup()
             imgui.NewLine() imgui.NewLine()
             imgui.SameLine(200)
@@ -3208,6 +3187,7 @@ function imgui.OnDrawFrame()
                 inicfg.save(def, directIni)
             end
             imgui.SameLine() ShowHelpMarker(u8("\xD1\xEE\xEE\xE1\xF9\xE5\xED\xE8\xFF\x20\xEE\xF2\x20'\x46\x61\x72\x6D\x20\x42\x6F\x74'\x20\xE1\xF3\xE4\xF3\xF2\x20\xE2\xFB\xE2\xEE\xE4\xE8\xF2\xFC\xF1\xFF\x20\xED\xE5\x20\xE2\x20\xF7\xE0\xF2\x2C\x20\xE0\x20\xE2\x20\xEA\xEE\xED\xF1\xEE\xEB\xFC"))
+        
             if faico then
                 if imgui.Button(fa.ICON_FA_UPLOAD .. u8("\x20\x20\x20\xCF\xF0\xEE\xE2\xE5\xF0\xE8\xF2\xFC\x20\xEE\xE1\xED\xEE\xE2\xEB\xE5\xED\xE8\xFF")) then
                     update()
@@ -3236,7 +3216,7 @@ function imgui.OnDrawFrame()
             imgui.EndGroup()
         end
 
-        if vkladki[8] == true then -- Информация
+        if vkladki[8] == true then -- Information
 			imgui.BeginGroup()
 			imgui.NewLine() imgui.NewLine()
             imgui.SameLine(200)
@@ -3267,11 +3247,13 @@ function imgui.OnDrawFrame()
             imgui.SameLine(290) if imgui.Button(u8("\xCF\xE5\xF0\xE5\xE9\xF2\xE8")) then os.execute('explorer "https://vk.com/kscripts"') end
             imgui.NewLine()
             imgui.SameLine(100) imgui.Text(u8("\xC0\xE2\xF2\xEE\xF0\x20\xEF\xE5\xF0\xE5\xE4\xE5\xEB\xEA\xE8\x3A\x20\x66\x6C\x75\x70\x69\x66\x6C\x75\x66\x69\x20\x20\x20"))
-            imgui.NewLine()
+			imgui.NewLine()
+            imgui.SameLine(100) imgui.TextLink(u8("\xCC\xEE\xE9\x20\xF2\xE3\xEA\x3A\x20\x40\x66\x6C\x75\x70\x69\x66\x6C\x75\x66\x69"), "https://t.me/flupiflufi")
+            imgui.NewLine() 
             imgui.SameLine(100) imgui.Text(u8("\xC5\xF1\xEB\xE8\x20\xE5\xF1\xF2\xFC\x20\xE2\xEE\xEF\xF0\xEE\xF1\xFB\x20\xEF\xE8\xF8\xE8\xF2\xE5\x20\xE2\x20\xF2\xE5\xEC\xF3"))
 			imgui.NewLine() imgui.NewLine()
 			imgui.SameLine(100) imgui.Text(u8("\xC2\xE5\xF0\xF1\xE8\xFF\x20\xF1\xEA\xF0\xE8\xEF\xF2\xE0\x3A\x20")..thisScript().version)
-		    imgui.SameLine() imgui.Text(u8("\x28\x20\xCD\xE0\xE2\xE5\xF0\xED\xEE\x20\xEF\xEE\xF1\xEB\xE5\xE4\xED\xFF\xFF\x20\xE2\xE5\xF0\xF1\xE8\xFF\x20\x29"))
+		    imgui.SameLine() imgui.Text(u8("\x28\x20\xF5\xE7\x20\xF7\xF2\xEE\x20\xF1\xFE\xE4\xE0\x20\xEF\xE8\xF1\xE0\xF2\xFC\x20\x29"))
 			imgui.EndGroup()
 		end
         imgui.End()
@@ -3343,7 +3325,6 @@ function imgui.OnDrawFrame()
                 ini.theme9[color.key .. "_b"] = col.v[3]
                 ini.theme9[color.key .. "_a"] = col.v[4]
                 inicfg.save(def, directIni)
-                --print("[DEBUG] "..color.key.." changed: ", col.v[1], col.v[2], col.v[3], col.v[4])
             end
         end  
         imgui.PopItemWidth()
@@ -3364,12 +3345,14 @@ function imgui.OnDrawFrame()
 		imgui.NewLine()
 		imgui.BeginGroup()		
 			imgui.Separator() imgui.NewLine() imgui.NewLine() imgui.SameLine(170)
-			imgui.Text(u8'V 1.3') imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8("\x31\x2E\x20\xD1\xE4\xE5\xEB\xE0\xEB\x20\xEA\xF0\xF3\xF2\xEE\xE9\x20\xEC\xE5\xF2\xEE\xE4\x20\xEA\xEE\xEC\xE1\xE0\xE9\xED\xE5\xF0\xE0\x22\x2E")) imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8("\x32\x2E\x20\xCA\xEE\xEB\xEB\xE8\xE7\xE8\xFF\x20\xEE\xE1\xFA\xE5\xEA\xF2\xEE\xE2\x20\xF0\xE0\xE4\xE8\x20\xEA\xEE\xEC\xE1\xE0\xE9\xED\xE5\xF0\xE0\x2E")) imgui.NewLine() imgui.NewLine()
-			imgui.SameLine(15) imgui.Text(u8("\x33\x2E\x20\xCF\xEE\xEB\xED\xE0\xFF\x20\xEB\xE5\xE3\xE8\xF2\xED\xEE\xF1\xF2\xFC\x20\xE2\xF1\xE5\xF5\x20\xF0\xE0\xE1\xEE\xF2\x28\xEE\xF2\xE2\xE5\xF7\xE0\xFE\x29\x2E")) imgui.NewLine() imgui.NewLine()
-            imgui.SameLine(15) imgui.Text(u8("\x34\x2E\x20\xC4\xEE\xE1\xE0\xE2\xEB\xE5\xED\xE0\x20\xEA\xE0\xF1\xF2\xEE\xEC\xED\xE0\xFF\x20\xF2\xE5\xEC\xE0")) imgui.NewLine() imgui.NewLine()
-            imgui.SameLine(15) imgui.Text(u8("\x35\x2E\x20\xC2\xF1\xFF\xEA\xF3\xFE\x20\xF5\xF0\xE5\xED\xFC\x20\xE4\xEE\xE1\xE0\xE2\xE8\xEB\x20\xF7\xE8\xF1\xF2\xEE\x20\xE4\xEB\xFF\x20\xEA\xF0\xE0\xF1\xEE\xF2\xFB")) imgui.NewLine() imgui.NewLine()
+			imgui.Text(u8("\x56\x20\x31\x2E\x34\x28\xD0\xE0\xE1\xEE\xF2\xE0\x20\xED\xE0\xE4\x20\xEE\xF8\xE8\xE1\xEA\xE0\x29")) imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8("\x31\x2E\x20\xC2\xF1\xE5\x20\xF0\xE0\xE1\xEE\xF2\xFB\x20\xEC\xEE\xE3\xF3\xF2\x20\xF0\xE0\xE1\xEE\xF2\xE0\xF2\xFC\x20\xE2\x20\xF1\xE2\xB8\xF0\xED\xF3\xF2\xEE\xEC\x20\xF0\xE5\xE6\xE8\xEC\xE5\x2E")) imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8("\x32\x2E\x20\xD4\xE8\xEA\xF1\x20\xEA\xE8\xEA\xE0\x20\xED\xE0\x20\xEA\xF3\xEA\xF3\xF0\xF3\xE7\xED\xE8\xEA\xE5\x2E")) imgui.NewLine() imgui.NewLine()
+			imgui.SameLine(15) imgui.Text(u8("\x33\x2E\x20\xC4\xEE\xE1\xE0\xE2\xEB\xE5\xED\xE0\x20\xF1\xE8\xF1\xF2\xE5\xEC\xE0\x20\xEF\xE0\xF3\xE7\xFB\x2E")) imgui.NewLine() imgui.NewLine()
+            imgui.SameLine(15) imgui.Text(u8("\x34\x2E\x20\xC4\xEE\xE1\xE0\xE2\xE8\xEB\x20\xE0\xE2\xF2\xEE\xEE\xE1\xED\xEE\xE2\xEB\xE5\xED\xE8\xE5\x2E")) imgui.NewLine() imgui.NewLine()
+            imgui.SameLine(15) imgui.Text(u8("\x35\x2E\x20\xD1\xE0\xEC\xEE\xE5\x20\xEF\xF0\xE8\xEA\xEE\xEB\xFC\xED\xEE\xE5\x20\xFD\xF2\xEE\x20\xE0\xE2\xF2\xEE\xE7\xE0\xEC\xE5\xED\xE0\x20\xF2\xF0\xE0\xF2\xEE\xF0\xE0\x2E")) imgui.NewLine() imgui.NewLine()
+            imgui.SameLine(15) imgui.Text(u8("\x36\x2E\x20\xCD\xEE\xE2\xE0\xFF\x20\xEA\xEE\xEC\xE0\xED\xE4\xE0\x20\xE8\x20\xEA\xED\xEE\xEF\xEE\xF7\xEA\xE8\x20\xE4\xEB\xFF\x20\xF2\xE3\x2E")) imgui.NewLine() imgui.NewLine()
+            imgui.SameLine(15) imgui.Text(u8("\x37\x2E\x20\xC2\xF1\xB8\x20\xF2\xE0\xEA\xE6\xE5\x20\xED\xE5\x20\xEF\xFB\xF2\xE0\xFE\xF1\xFC\x20\xF4\xE8\xEA\xF1\xE8\xF2\xFC\x20\xF2\xF0\xE0\xEA\xF2\xEE\xF0\xE8\xF1\xF2\xE0\x2E")) imgui.NewLine() imgui.NewLine()
 		imgui.EndGroup()
 		imgui.SetCursorPos(imgui.ImVec2(300, 460))
 		if imgui.Button(u8("\xC7\xE0\xEA\xF0\xFB\xF2\xFC"), imgui.ImVec2(80, 25)) then 
@@ -3377,6 +3360,7 @@ function imgui.OnDrawFrame()
 		end
 		imgui.End()
 	end
+
     if crash.v then
         imgui.Begin(' ', crash, imgui.WindowFlags.NoResize + imgui.WindowFlags.NoTitleBar)
     end
@@ -3421,7 +3405,7 @@ end
 
 function calculateScenario(roleIdx, vip, axe)
     local result = ''
-    if roleIdx == 0 then -- Начальная ферма
+    if roleIdx == 0 then
         if vip and axe then
             result = u8("\xCD\xE0\xF7\xE0\xEB\xFC\xED\xE0\xFF\x20\xF4\xE5\xF0\xEC\xE0\x20\x2B\x20\x56\x49\x50\x20\x2B\x20\xC0\xEA\xF1\xE5\xF1\xF1\xF3\xE0\xF0\x3A\n") ..
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xF0\xE5\xE9\xF1\xE0\x3A\x20\x31\x33\x20\xF1\xE5\xEA\xF3\xED\xE4\n") ..
@@ -3451,7 +3435,7 @@ function calculateScenario(roleIdx, vip, axe)
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xE4\xEE\x20\xEF\xEE\xE2\xFB\xF8\xE5\xED\xE8\xFF\x20\xED\xE0\xE2\xFB\xEA\xE0\x3A\x20\x36\x30\x20\xEC\xE8\xED\xF3\xF2\n") ..
                      u8("\xC2\xE5\xF1\xFC\x20\xE7\xE0\xF0\xE0\xE1\xEE\xF2\xEE\xEA\x3A\x20\x35\x30\x2E\x30\x30\x30\x24")
         end
-    elseif roleIdx == 1 then -- Тракторист
+    elseif roleIdx == 1 then
         if vip and axe then
             result = u8("\xD2\xF0\xE0\xEA\xF2\xEE\xF0\xE8\xF1\xF2\x20\x2B\x20\x56\x49\x50\x20\x2B\x20\xC0\xEA\xF1\xE5\xF1\xF1\xF3\xE0\xF0\x3A\n") ..
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xF0\xE5\xE9\xF1\xE0\x3A\x20\x35\x20\xEC\xE8\xED\xF3\xF2\n") ..
@@ -3481,7 +3465,7 @@ function calculateScenario(roleIdx, vip, axe)
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xE4\xEE\x20\xEF\xEE\xE2\xFB\xF8\xE5\xED\xE8\xFF\x20\xED\xE0\xE2\xFB\xEA\xE0\x3A\x20\x34\x20\xF7\xE0\xF1\xE0\n") ..
                      u8("\xC2\xE5\xF1\xFC\x20\xE7\xE0\xF0\xE0\xE1\xEE\xF2\xEE\xEA\x3A\x20\x31\x37\x2E\x32\x35\x30\x2E\x30\x30\x30\x24")
         end
-    elseif roleIdx == 2 then -- Комбайнер
+    elseif roleIdx == 2 then
         if vip and axe then
             result = u8("\xCA\xEE\xEC\xE1\xE0\xE9\xED\xE5\xF0\x20\x2B\x20\x56\x49\x50\x20\x2B\x20\xC0\xEA\xF1\xE5\xF1\xF1\xF3\xE0\xF0\x3A\n") ..
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xF0\xE5\xE9\xF1\xE0\x3A\x20\x34\x20\xEC\xE8\xED\xF3\xF2\xFB\x20\x31\x35\x20\xF1\xE5\xEA\xF3\xED\xE4\n") ..
@@ -3511,7 +3495,7 @@ function calculateScenario(roleIdx, vip, axe)
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xE4\xEE\x20\xEF\xEE\xE2\xFB\xF8\xE5\xED\xE8\xFF\x20\xED\xE0\xE2\xFB\xEA\xE0\x3A\x20\x33\x20\xF7\xE0\xF1\xE0\x20\x31\x30\x20\xEC\xE8\xED\xF3\xF2\n") ..
                      u8("\xC2\xE5\xF1\xFC\x20\xE7\xE0\xF0\xE0\xE1\xEE\xF2\xEE\xEA\x3A\x20\x34\x2E\x31\x31\x38\x2E\x34\x30\x30\x24")
         end
-    elseif roleIdx == 3 then -- Водитель кукурузника
+    elseif roleIdx == 3 then
         if vip and axe then
             result = u8("\xCA\xF3\xEA\xF3\xF0\xF3\xE7\xED\xE8\xEA\x20\x2B\x20\x56\x49\x50\x20\x2B\x20\xC0\xEA\xF1\xE5\xF1\xF1\xF3\xE0\xF0\x3A\n") ..
                      u8("\xC2\xF0\xE5\xEC\xFF\x20\xF0\xE5\xE9\xF1\xE0\x3A\x20\x36\x20\xEC\xE8\xED\xF3\xF2\x20\x34\x30\x20\xF1\xE5\xEA\xF3\xED\xE4\n") ..
@@ -3544,7 +3528,7 @@ function calculateScenario(roleIdx, vip, axe)
     end
     scenarioText = result
 end
--------------------------------Жизненно необходимые потоки-------------------------------------------
+-------------------------------Neobhodimie potoki pispis-------------------------------------------
 huy222 = true
 lua_thread.create(function() 
     while true do
@@ -3573,7 +3557,7 @@ lua_thread.create(function()
         end
     end
 end)
--------------------------------Я знаю можно было проще-------------------------------------------
+-------------------------------Govnokod na 1000%-------------------------------------------
 function rideToTractor(x, y, z, speed, radius)
     radius = radius or 1.2
     turnRight = false
@@ -3602,38 +3586,38 @@ function rideToTractor(x, y, z, speed, radius)
         if angsum < 180 then
             local diff = angsum
             if diff > 15 then
-                setGameKeyState(0, -255) -- Резко влево
+                setGameKeyState(0, -255)
                 turnLeft = true
                 turnRight = false
             elseif diff > 5 then
-                setGameKeyState(0, -120) -- Средне влево
+                setGameKeyState(0, -120)
                 turnLeft = true
                 turnRight = false
             elseif diff > 1 then
-                setGameKeyState(0, -40) -- Плавно влево
+                setGameKeyState(0, -40)
                 turnLeft = true
                 turnRight = false
             else
-                setGameKeyState(0, 0) -- Прямо
+                setGameKeyState(0, 0)
                 turnLeft = false
                 turnRight = false
             end
         else
             local diff = 360 - angsum
             if diff > 15 then
-                setGameKeyState(0, 255) -- Резко вправо
+                setGameKeyState(0, 255)
                 turnRight = true
                 turnLeft = false
             elseif diff > 5 then
-                setGameKeyState(0, 120) -- Средне вправо
+                setGameKeyState(0, 120)
                 turnRight = true
                 turnLeft = false
             elseif diff > 1 then
-                setGameKeyState(0, 40) -- Плавно вправо
+                setGameKeyState(0, 40)
                 turnRight = true
                 turnLeft = false
             else
-                setGameKeyState(0, 0) -- Прямо
+                setGameKeyState(0, 0)
                 turnRight = false
                 turnLeft = false
             end
@@ -3651,10 +3635,10 @@ function rideToTractor(x, y, z, speed, radius)
         if dista < 15 then targetSpeed = speed * 0.15 end
         if speedNow < targetSpeed and not ww then
             setGameKeyState(6, 0)
-            setGameKeyState(16, 255) -- Газ
+            setGameKeyState(16, 255)
         elseif speedNow > targetSpeed and not ww then
             setGameKeyState(16, 0)
-            setGameKeyState(6, 255) -- Тормоз
+            setGameKeyState(6, 255)
         end
     end
 end
@@ -3687,38 +3671,38 @@ function rideToCombine(x, y, z, speed, radius)
         if angsum < 180 then
             local diff = angsum
             if diff > 15 then
-                setGameKeyState(0, -255) -- Резко влево
+                setGameKeyState(0, -255)
                 turnLeft = true
                 turnRight = false
             elseif diff > 5 then
-                setGameKeyState(0, -120) -- Средне влево
+                setGameKeyState(0, -120)
                 turnLeft = true
                 turnRight = false
             elseif diff > 1 then
-                setGameKeyState(0, -40) -- Плавно влево
+                setGameKeyState(0, -40)
                 turnLeft = true
                 turnRight = false
             else
-                setGameKeyState(0, 0) -- Прямо
+                setGameKeyState(0, 0)
                 turnLeft = false
                 turnRight = false
             end
         else
             local diff = 360 - angsum
             if diff > 15 then
-                setGameKeyState(0, 255) -- Резко вправо
+                setGameKeyState(0, 255)
                 turnRight = true
                 turnLeft = false
             elseif diff > 5 then
-                setGameKeyState(0, 120) -- Средне вправо
+                setGameKeyState(0, 120)
                 turnRight = true
                 turnLeft = false
             elseif diff > 1 then
-                setGameKeyState(0, 40) -- Плавно вправо
+                setGameKeyState(0, 40)
                 turnRight = true
                 turnLeft = false
             else
-                setGameKeyState(0, 0) -- Прямо
+                setGameKeyState(0, 0)
                 turnRight = false
                 turnLeft = false
             end
@@ -3738,10 +3722,10 @@ function rideToCombine(x, y, z, speed, radius)
 
         if speedNow < targetSpeed and not ww then
             setGameKeyState(6, 0)
-            setGameKeyState(16, 255) -- Газ
+            setGameKeyState(16, 255)
         elseif speedNow > targetSpeed and not ww then
             setGameKeyState(16, 0)
-            setGameKeyState(6, 255) -- Тормоз
+            setGameKeyState(6, 255)
         end
 
     end
@@ -3764,6 +3748,7 @@ local function startRoute(routeName)
         work3 = false
     end
 end
+
 function toggleNoCollisionObjects(enableCollision)
     for _, handle in ipairs(getAllObjects()) do
         if doesObjectExist(handle) then
@@ -3776,22 +3761,7 @@ function toggleNoCollisionObjects(enableCollision)
         end
     end
 end
-function SetAngle(x, y, z)
-    local posX, posY, posZ = GetCoordinates()
-    local pX = x - posX
-    local pY = y - posY
-    local zAngle = getHeadingFromVector2d(pX, pY)
- 
-    if isCharInAnyCar(playerPed) then
-        local car = storeCarCharIsInNoSave(playerPed)
-        setCarHeading(car, zAngle)
-    else
-        setCharHeading(playerPed, zAngle)
-    end
- 
-    restoreCameraJumpcut()
-end
- 
+
 function GetCoordinates()
     if isCharInAnyCar(playerPed) then
         local car = storeCarCharIsInNoSave(playerPed)
@@ -3828,17 +3798,6 @@ function getLocalVehicle()
     return isCharInAnyCar(PLAYER_PED) and storeCarCharIsInNoSave(PLAYER_PED) or nil
 end
 
-
-function char_to_hex(str)
-    return string.format("%%%02X", string.byte(str))
-end
-  
-function url_encode(str)
-    local str = string.gsub(str, "\\", "\\")
-    local str = string.gsub(str, "([^%w])", char_to_hex)
-    return str
-end
-
 function WorkInBackground(work)
     local memory = require 'memory'
     if work then
@@ -3868,10 +3827,6 @@ function SCM(arg1)
     else
         sampAddChatMessage("[Farm-bot]: {FFFFFF}"..arg1, 0xF1CB09)
     end
-end
-
-function toSendGet(msg)
-	return urlencode(u8:encode(msg, "CP1251"))
 end
 
 function urlencode(arg)
@@ -4121,7 +4076,6 @@ function processing_telegram_messages(result)
                             elseif text:match('^!crash') then
                                 crash.v = not crash.v
                                 sendTelegramNotification(("\xCA\xF0\xE0\xF8\xED\xF3\xEB\x21"))
-
                             else
                                 sendTelegramNotification(("\xCD\xE5\xE8\xE7\xE2\xE5\xF1\xF2\xED\xE0\xFF\x20\xEA\xEE\xEC\xE0\xED\xE4\xE0\x21"))
                             end
@@ -4147,6 +4101,7 @@ function getLastUpdate()
         end
     end)
 end
+
 function decodeJson(jsonString)
     local success, result = pcall(function() return json.decode(jsonString) end)
     if success then
@@ -4155,6 +4110,7 @@ function decodeJson(jsonString)
         return nil
     end
 end
+
 function warning2()
     while true do wait(0)
       if warn2 then
@@ -5013,4 +4969,3 @@ function strong_style()
     style.WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
     style.ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
 end
-
